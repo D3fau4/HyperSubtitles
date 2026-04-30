@@ -2,7 +2,7 @@
 
 #include "../minhook/include/MinHook.h"
 #include "dllmain.hpp"
-#include "HookTemplate.hpp"
+#include "HyperSubtitles.hpp"
 #include "ImGuiRenderer.hpp"
 #include "Logger.hpp"
 
@@ -14,21 +14,21 @@ static DWORD WINAPI InitializeHook(LPVOID)
 #endif
 
     if (MH_Initialize() != MH_OK) {
-        MessageBoxA(nullptr, "Failed to initialize MinHook", "HookTemplate", MB_ICONERROR);
+        MessageBoxA(nullptr, "Failed to initialize MinHook", "HyperSubtitles", MB_ICONERROR);
         return 1;
     }
 
     if (!SetupHooks()) {
-        MessageBoxA(nullptr, "Failed to set up hooks", "HookTemplate", MB_ICONERROR);
+        MessageBoxA(nullptr, "Failed to set up hooks", "HyperSubtitles", MB_ICONERROR);
         return 1;
     }
 
     if (MH_EnableHook(MH_ALL_HOOKS) != MH_OK) {
-        MessageBoxA(nullptr, "Failed to enable hooks", "HookTemplate", MB_ICONERROR);
+        MessageBoxA(nullptr, "Failed to enable hooks", "HyperSubtitles", MB_ICONERROR);
         return 1;
     }
 
-    Logger::log("Hook template initialized");
+    Logger::log("HyperSubtitles initialized");
     return 0;
 }
 

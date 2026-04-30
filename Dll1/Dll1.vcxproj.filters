@@ -21,7 +21,7 @@
     <ClInclude Include="dllmain.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HookTemplate.hpp">
+    <ClInclude Include="HyperSubtitles.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Logger.hpp">
@@ -32,7 +32,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HookTemplate.cpp">
+    <ClCompile Include="HyperSubtitles.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
