@@ -14,9 +14,9 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{8CDB892A-E17E-4D27-A8C4-1753F72501C6}</ProjectGuid>
-    <RootNamespace>HookTemplate</RootNamespace>
+    <RootNamespace>HyperSubtitles</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>HookTemplate</ProjectName>
+    <ProjectName>HyperSubtitles</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -92,7 +92,7 @@
     <ClInclude Include="..\imgui\backends\imgui_impl_opengl2.h" />
     <ClInclude Include="..\imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="dllmain.hpp" />
-    <ClInclude Include="HookTemplate.hpp" />
+    <ClInclude Include="HyperSubtitles.hpp" />
     <ClInclude Include="ImGuiRenderer.hpp" />
     <ClInclude Include="Logger.hpp" />
   </ItemGroup>
@@ -105,7 +105,7 @@
     <ClCompile Include="..\imgui\backends\imgui_impl_opengl2.cpp" />
     <ClCompile Include="..\imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="HookTemplate.cpp" />
+    <ClCompile Include="HyperSubtitles.cpp" />
     <ClCompile Include="ImGuiRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
