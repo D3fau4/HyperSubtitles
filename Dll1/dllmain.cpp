@@ -10,7 +10,7 @@ static DWORD WINAPI InitializeHook(LPVOID)
 {
 #ifdef _DEBUG
     Logger::init();
-    Logger::enableConsole(false);
+    Logger::enableConsole(true);
 #endif
 
     if (MH_Initialize() != MH_OK) {
