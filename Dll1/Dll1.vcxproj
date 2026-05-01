@@ -94,7 +94,9 @@
     <ClInclude Include="dllmain.hpp" />
     <ClInclude Include="HyperSubtitles.hpp" />
     <ClInclude Include="ImGuiRenderer.hpp" />
+    <ClInclude Include="json.hpp" />
     <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\imgui\imgui.cpp" />
@@ -116,6 +118,15 @@
     <ProjectReference Include="..\minhook\build\VC17\libMinHook.vcxproj">
       <Project>{F142A341-5EE0-442D-A15F-98AE9B48DBAE}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HyperSubtitles.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="faces\001.png" />
+    <Image Include="faces\003.png" />
+    <Image Include="faces\004.png" />
+    <Image Include="faces\005.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

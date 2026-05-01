@@ -16,6 +16,9 @@
     <Filter Include="ImGUI">
       <UniqueIdentifier>{27c7c985-64e4-4a66-bf13-3809b6726213}</UniqueIdentifier>
     </Filter>
+    <Filter Include="faces">
+      <UniqueIdentifier>{55a702e0-08cb-4a4b-8453-e80db0f46763}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\minhook\include\MinHook.h">
@@ -41,6 +44,12 @@
     </ClInclude>
     <ClInclude Include="..\imgui\backends\imgui_impl_win32.h">
       <Filter>ImGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,5 +91,22 @@
     <None Include="winmm_stubs.inl">
       <Filter>Proxy Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="HyperSubtitles.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="faces\001.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\005.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\003.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\004.png">
+      <Filter>faces</Filter>
+    </Image>
   </ItemGroup>
 </Project>
