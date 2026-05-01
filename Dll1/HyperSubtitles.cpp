@@ -39,6 +39,7 @@ void LoadSubtitles(const std::string& filePath, std::vector<Subtitle>& subtitles
         s.audioFile = sub["audioFile"];
         subtitles.push_back(s);
     }
+	Logger::log("Loaded %d subtitles", subtitles.size());
 }
 
 void ShowSubtitle(const char* text, float seconds)
@@ -83,10 +84,10 @@ bool SetupHooks()
         return false;
     }
 
-    if (std::filesystem::exists("subtitles.json")) {
+    if (std::filesystem::exists("./subtitles.json")) {
 		Logger::log("Loading subtitles from subtitles.json");
         g_subtitles = new std::vector<Subtitle>();
-        LoadSubtitles("subtitles.json", *g_subtitles);
+        LoadSubtitles("./subtitles.json", *g_subtitles);
     }
 
     Logger::log("ImGui renderer hooked (OpenGL2)");
