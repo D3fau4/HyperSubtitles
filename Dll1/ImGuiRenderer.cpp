@@ -1,4 +1,5 @@
 #include "ImGuiRenderer.hpp"
+#include "DialogueBox.hpp"
 
 #include <windows.h>
 #include <GL/GL.h>
@@ -40,6 +41,8 @@ static void InitImGui(HDC hdc)
     ImGui::StyleColorsDark();
     ImGui_ImplWin32_Init(g_hwnd);
     ImGui_ImplOpenGL2_Init();
+
+    DialogueBox::OnImGuiInit();
 
     g_origWndProc = reinterpret_cast<WNDPROC>(
         SetWindowLongPtrW(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(HookedWndProc)));
@@ -86,6 +89,7 @@ void ImGuiRenderer::Shutdown()
     if (g_hwnd && g_origWndProc)
         SetWindowLongPtrW(g_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(g_origWndProc));
 
+    DialogueBox::Shutdown();
     ImGui_ImplOpenGL2_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();

@@ -91,11 +91,13 @@
     <ClInclude Include="..\imgui\imgui.h" />
     <ClInclude Include="..\imgui\backends\imgui_impl_opengl2.h" />
     <ClInclude Include="..\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="DialogueBox.hpp" />
     <ClInclude Include="dllmain.hpp" />
     <ClInclude Include="HyperSubtitles.hpp" />
     <ClInclude Include="ImGuiRenderer.hpp" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="Rebirth_offsets.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +108,7 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui\backends\imgui_impl_opengl2.cpp" />
     <ClCompile Include="..\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="DialogueBox.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="HyperSubtitles.cpp" />
     <ClCompile Include="ImGuiRenderer.cpp" />
