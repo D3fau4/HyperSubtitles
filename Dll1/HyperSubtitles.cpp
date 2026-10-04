@@ -79,8 +79,6 @@ bool SetupHooks(DWORD entryPoint, uintptr_t base)
     cfg.x = 600.0f;
     cfg.y = 1000.0f;
     cfg.width = 1200.0f;
-    cfg.portraitHeight = 74;
-    cfg.fontSize = 32.0f;
     DialogueBox::SetConfig(cfg);
 
 	switch (entryPoint) {
