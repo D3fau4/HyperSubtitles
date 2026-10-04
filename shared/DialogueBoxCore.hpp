@@ -50,8 +50,9 @@ namespace DialogueBoxCore
     // Font file and the exact atlas settings used in game.
     inline constexpr const char* kFontFile = "FOT-NewRodinPro-EB.otf";
     ImFont* AddDialogueFont(ImFontAtlas* atlas, const char* path);
-    // True when the dialogue font has a glyph for this codepoint.
-    bool    FontCovers(unsigned int codepoint);
+    // True when the font file has a glyph for this codepoint (ImGui >= 1.92 draws any
+    // glyph in the file; the Latin-1 range given to AddDialogueFont only preloads).
+    bool    FontCovers(ImFont* font, unsigned int codepoint);
 
     struct Layout
     {

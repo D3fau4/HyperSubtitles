@@ -103,7 +103,8 @@ bool SaveConfigFile(const char* path, const Config& cfg)
 // Font
 // ---------------------------------------------------------------------------
 
-// 0x0020-0x00FF = Basic Latin + Latin-1 Supplement (all Spanish, French, Italian, Portuguese, German letters)
+// 0x0020-0x00FF = Basic Latin + Latin-1 Supplement. Since ImGui 1.92 glyphs are loaded
+// on demand, so this only preloads them: every glyph in the font file can be drawn.
 static const ImWchar k_latinRanges[] = { 0x0020, 0x00FF, 0 };
 
 ImFont* AddDialogueFont(ImFontAtlas* atlas, const char* path)
@@ -111,14 +112,13 @@ ImFont* AddDialogueFont(ImFontAtlas* atlas, const char* path)
     return atlas->AddFontFromFileTTF(path, 36.0f, nullptr, k_latinRanges);
 }
 
-bool FontCovers(unsigned int codepoint)
+bool FontCovers(ImFont* font, unsigned int codepoint)
 {
     if (codepoint == '\n')
         return true;
-    for (const ImWchar* r = k_latinRanges; r[0]; r += 2)
-        if (codepoint >= r[0] && codepoint <= r[1])
-            return true;
-    return false;
+    if (codepoint > 0xFFFF)  // ImWchar is 16-bit in the default build
+        return false;
+    return font && font->IsGlyphInFont(static_cast<ImWchar>(codepoint));
 }
 
 // ---------------------------------------------------------------------------
