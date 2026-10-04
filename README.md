@@ -21,7 +21,7 @@ The template intentionally contains no game-specific offsets, file replacement l
 
 ## Subtitles pipeline
 
-`data/lines/battle.json` and `data/lines/event.json` are the source of truth: one entry per voice id with the Japanese and English text (and where each comes from), the duration of each audio, the character and the Spanish translation. Everything else is generated from them.
+`data/lines/battle.json` and `data/lines/event.json` are the source of truth: one entry per voice id with the Japanese and English text (and where each comes from), the duration of each audio (plus an optional `displayDuration` override of the time on screen), the character, the translation (`text`) and its `status` (`pending`, `translated` or `reviewed`). The database is language agnostic: each translation team keeps its own copy of `data/lines/`. Everything else is generated from them.
 
 ```bat
 tools\pipeline.cmd "E:\SteamLibrary\steamapps\common\Neptunia Rebirth1"
@@ -29,7 +29,7 @@ tools\pipeline.cmd "E:\SteamLibrary\steamapps\common\Neptunia Rebirth1"
 
 runs everything from the game install: extracts `VOICE` and `VOICE_EN`, transcribes both with Whisper on the GPU, reads the official English text from the event scripts (base game and DLC `.pac`), updates `data/lines/` (keeping translations and anything marked `"source": "manual"`) and writes `data/subtitles.json`.
 
-`tools\lines\lines.py` also has `export-po` / `import-po` to translate with a PO editor, and `export-subtitles` to regenerate `data/subtitles.json`.
+`tools\lines\lines.py` also has `export-po` / `import-po` to translate with a PO editor (`--language` sets the PO header), and `export-subtitles` to regenerate `data/subtitles.json`. Line breaks typed in a translation are kept; the English fallback is shown on one line and re-wrapped by the DLL.
 
 - `tools/extract/`: voice WAVs from the XACT banks (`SOUND.xsb` + `SOUND.xwb`), a `DW_PACK` `.pac` extractor (`extract_pac.py`), event script text (`parse_event_scripts.py`) and character portraits for the DLL (`extract_portraits.py --game ...`, then wire new ones in `Dll1/resource.h`, `HyperSubtitles.rc` and `k_portraits`). See its `README.md`.
 - `tools/transcribe/`: Whisper transcription. Extracted audio goes in `tools/transcribe/wav_out/`, which is not tracked.

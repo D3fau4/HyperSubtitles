@@ -5,9 +5,9 @@ data/lines/battle.json and data/lines/event.json hold one entry per voice id:
 
   "80101001": {
     "character": 1,
-    "ja": {"text": "...", "source": "whisper", "duration": 2.41},
+    "ja": {"text": "...", "source": "whisper", "duration": 2.41, "displayDuration": 3.0},
     "en": {"text": "...", "source": "script", "duration": 2.73},
-    "es": "",
+    "text": "",
     "status": "pending"
   }
 
@@ -18,14 +18,21 @@ only when the audio exists. source is "script" (game event script), "whisper"
 or "manual" (edited by hand; never overwritten by build). Whisper text is cleaned
 of runaway repetitions ("NOOOO..." x1000 becomes "NOOO").
 
+text is the translation. The database is language agnostic: each translation team
+ships its own copy of data/lines. status is "pending", "translated" or "reviewed".
+displayDuration is an optional per-audio-language override of how long the subtitle
+stays on screen (set by the editor; build never touches it); duration is used when
+it is missing.
+
 Commands:
   build             merge audio, Whisper transcripts and event script text into data/lines
-  export-po         write a PO for translation (msgctxt = CATEGORY/id, msgstr = es)
-  import-po         read es translations back from a PO
-  export-subtitles  write the subtitles.json loaded by the DLL (es, else en; one entry
-                    per language that has audio, each with its own duration). Line
-                    breaks are collapsed: the game's script wraps for its own, narrower
-                    text box, so the DLL re-wraps to the subtitle width.
+  export-po         write a PO for translation (msgctxt = CATEGORY/id, msgstr = text)
+  import-po         read translations back from a PO
+  export-subtitles  write the subtitles.json loaded by the DLL (text, else en; one entry
+                    per language that has audio, each with its displayDuration or
+                    duration). Line breaks in text are kept (the translator placed
+                    them); the English fallback is collapsed to one line because the
+                    game's script wraps for its own, narrower text box.
 """
 
 from __future__ import annotations
@@ -41,6 +48,9 @@ CATEGORIES = ("BATTLE", "EVENT")
 LANGUAGES = (("ja", "VOICE"), ("en", "VOICE_EN"))
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_DATA = REPO / "data" / "lines"
+ENTRY_KEYS = ("character", "ja", "en", "text", "status")
+AUDIO_KEYS = ("text", "source", "duration", "displayDuration")
+STATUSES = ("pending", "translated", "reviewed")
 
 
 def wav_duration(path: Path) -> float:
@@ -175,11 +185,11 @@ def build(args: argparse.Namespace) -> int:
                             updated["text"] = clean_whisper(text)
                             updated["source"] = "whisper"
                 if updated:
-                    entry[lang] = {key: updated[key] for key in ("text", "source", "duration") if key in updated}
+                    entry[lang] = {key: updated[key] for key in AUDIO_KEYS if key in updated}
 
-            entry.setdefault("es", "")
+            entry.setdefault("text", "")
             entry.setdefault("status", "pending")
-            lines[voice_id] = {key: entry[key] for key in ("character", "ja", "en", "es", "status") if key in entry}
+            lines[voice_id] = {key: entry[key] for key in ENTRY_KEYS if key in entry}
 
         path = save_category(args.data, category, lines)
         with_ja = sum(1 for e in lines.values() if e.get("ja", {}).get("text"))
@@ -211,7 +221,7 @@ def export_po(args: argparse.Namespace) -> int:
         'msgid ""',
         'msgstr ""',
         '"Content-Type: text/plain; charset=UTF-8\\n"',
-        '"Language: es\\n"',
+        f'"Language: {args.language}\\n"',
         "",
     ]
     count = 0
@@ -227,7 +237,7 @@ def export_po(args: argparse.Namespace) -> int:
             out.append(f"#. character: {entry.get('character', -1)}")
             out.append(f'msgctxt "{category}/{voice_id}"')
             out.append(f'msgid "{po_escape(source)}"')
-            out.append(f'msgstr "{po_escape(entry.get("es", ""))}"')
+            out.append(f'msgstr "{po_escape(entry.get("text", ""))}"')
             out.append("")
             count += 1
     Path(args.output).write_text("\n".join(out), encoding="utf-8", newline="\n")
@@ -271,15 +281,29 @@ def import_po(args: argparse.Namespace) -> int:
         lines = load_category(args.data, category)
         for voice_id, entry in lines.items():
             text = translations.get(f"{category}/{voice_id}")
-            if text is None or text == entry.get("es", ""):
+            if text is None or text == entry.get("text", ""):
                 continue
-            entry["es"] = text
+            entry["text"] = text
             if text and entry.get("status", "pending") == "pending":
                 entry["status"] = "translated"
             updated += 1
         save_category(args.data, category, lines)
     print(f"{updated} translations updated")
     return 0
+
+
+def collapse_spaces(text: str) -> str:
+    return " ".join(text.split())
+
+
+def display_text(entry: dict) -> str:
+    """Text shown in game: the translation keeping its line breaks (spaces inside
+    each line collapsed, empty lines dropped), else the English text on one line.
+    Must match shared/SubtitleText.hpp."""
+    translation = entry.get("text", "")
+    if translation.strip():
+        return "\n".join(line for line in map(collapse_spaces, translation.split("\n")) if line)
+    return collapse_spaces(entry.get("en", {}).get("text", ""))
 
 
 def export_subtitles(args: argparse.Namespace) -> int:
@@ -290,15 +314,14 @@ def export_subtitles(args: argparse.Namespace) -> int:
                 audio = entry.get(lang, {})
                 if "duration" not in audio:
                     continue
-                text = entry.get("es") or entry.get("en", {}).get("text")
+                text = display_text(entry)
                 if not text:
                     continue
-                text = " ".join(text.split())
                 subtitles.append({
                     "audioFile": f"/{folder}/{category}/{voice_id}.hca",
                     "character": entry.get("character", -1),
                     "text": text,
-                    "duration": audio["duration"],
+                    "duration": audio.get("displayDuration", audio["duration"]),
                 })
     output = Path(args.output)
     output.write_text(
@@ -324,7 +347,8 @@ def parse_args() -> argparse.Namespace:
     p.set_defaults(func=build)
 
     p = sub.add_parser("export-po", help="Write a PO for translation")
-    p.add_argument("-o", "--output", default=str(REPO / "data" / "es.po"))
+    p.add_argument("-o", "--output", default=str(REPO / "data" / "translation.po"))
+    p.add_argument("--language", default="es", help="Language code written to the PO header")
     p.set_defaults(func=export_po)
 
     p = sub.add_parser("import-po", help="Read translations back from a PO")
