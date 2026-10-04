@@ -127,9 +127,41 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="faces\001.png" />
+    <Image Include="faces\002.png" />
     <Image Include="faces\003.png" />
     <Image Include="faces\004.png" />
     <Image Include="faces\005.png" />
+    <Image Include="faces\006.png" />
+    <Image Include="faces\007.png" />
+    <Image Include="faces\008.png" />
+    <Image Include="faces\009.png" />
+    <Image Include="faces\010.png" />
+    <Image Include="faces\011.png" />
+    <Image Include="faces\013.png" />
+    <Image Include="faces\014.png" />
+    <Image Include="faces\015.png" />
+    <Image Include="faces\016.png" />
+    <Image Include="faces\017.png" />
+    <Image Include="faces\018.png" />
+    <Image Include="faces\019.png" />
+    <Image Include="faces\020.png" />
+    <Image Include="faces\021.png" />
+    <Image Include="faces\022.png" />
+    <Image Include="faces\102.png" />
+    <Image Include="faces\107.png" />
+    <Image Include="faces\120.png" />
+    <Image Include="faces\121.png" />
+    <Image Include="faces\122.png" />
+    <Image Include="faces\127.png" />
+    <Image Include="faces\128.png" />
+    <Image Include="faces\129.png" />
+    <Image Include="faces\1002.png" />
+    <Image Include="faces\1006.png" />
+    <Image Include="faces\1007.png" />
+    <Image Include="faces\1008.png" />
+    <Image Include="faces\1009.png" />
+    <Image Include="faces\1010.png" />
+    <Image Include="faces\1022.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

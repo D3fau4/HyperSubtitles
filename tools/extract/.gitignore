@@ -1,0 +1,4 @@
+*.csv
+wav_out/
+__pycache__/
+event_script_text.json

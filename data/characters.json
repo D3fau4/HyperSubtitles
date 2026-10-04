@@ -1,0 +1,384 @@
+{
+  "1": {
+    "name": "Neptune",
+    "portrait": "face/001",
+    "battle": "0001"
+  },
+  "2": {
+    "name": "Purple Heart",
+    "portrait": "trans/001",
+    "battle": "1001"
+  },
+  "3": {
+    "name": "Noire",
+    "portrait": "face/003",
+    "battle": "0003"
+  },
+  "4": {
+    "name": "Black Heart",
+    "portrait": "trans/003",
+    "battle": "1003"
+  },
+  "5": {
+    "name": "Vert",
+    "portrait": "face/005",
+    "battle": "0005"
+  },
+  "6": {
+    "name": "Green Heart",
+    "portrait": "trans/005",
+    "battle": "1005"
+  },
+  "7": {
+    "name": "Blanc",
+    "portrait": "face/004",
+    "battle": "0004"
+  },
+  "8": {
+    "name": "White Heart",
+    "portrait": "trans/004",
+    "battle": "1004"
+  },
+  "9": {
+    "name": "Compa",
+    "portrait": "face/012",
+    "battle": "0012"
+  },
+  "10": {
+    "name": "IF",
+    "portrait": "face/011",
+    "battle": "0011"
+  },
+  "11": {
+    "name": "Histoire",
+    "portrait": "face/019",
+    "battle": "0019"
+  },
+  "12": {
+    "name": "Histoire",
+    "portrait": "face/019"
+  },
+  "13": {
+    "name": "Falcom",
+    "portrait": "face/013",
+    "battle": "0013"
+  },
+  "14": {
+    "name": "Broccoli",
+    "portrait": "face/016",
+    "battle": "0016"
+  },
+  "15": {
+    "name": "MarvelousAQL",
+    "portrait": "face/017",
+    "battle": "0017"
+  },
+  "16": {
+    "name": "MAGES.",
+    "portrait": "face/014",
+    "battle": "0014"
+  },
+  "17": {
+    "name": "CyberConnect2",
+    "portrait": "face/015",
+    "battle": "0015"
+  },
+  "18": {
+    "name": "Tekken",
+    "portrait": "face/018",
+    "battle": "0018"
+  },
+  "19": {
+    "name": "Nepgear",
+    "portrait": "face/006",
+    "battle": "0006"
+  },
+  "20": {
+    "name": "Uni",
+    "portrait": "face/008",
+    "battle": "0008"
+  },
+  "21": {
+    "name": "Ram",
+    "portrait": "face/010",
+    "battle": "0010"
+  },
+  "22": {
+    "name": "Rom",
+    "portrait": "face/009",
+    "battle": "0009"
+  },
+  "23": {
+    "name": "Arfoire"
+  },
+  "24": {
+    "name": "Conversation"
+  },
+  "25": {
+    "name": "Singe"
+  },
+  "26": {
+    "name": "Ganache"
+  },
+  "27": {
+    "name": "Yvoire"
+  },
+  "28": {
+    "name": "Momus"
+  },
+  "29": {
+    "name": "Momus' Messenger"
+  },
+  "30": {
+    "name": "Key Fragment Guardian"
+  },
+  "31": {
+    "name": "Chian"
+  },
+  "32": {
+    "name": "Ran Ran"
+  },
+  "33": {
+    "name": "Ran Ran B"
+  },
+  "34": {
+    "name": "Financier"
+  },
+  "35": {
+    "name": "Fake Purple Heart"
+  },
+  "36": {
+    "name": "Fake Purple Heart A"
+  },
+  "37": {
+    "name": "Fake Purple Heart B"
+  },
+  "38": {
+    "name": "Fake Purple Heart C"
+  },
+  "39": {
+    "name": "Fake Black Heart"
+  },
+  "40": {
+    "name": "Fake Vert"
+  },
+  "41": {
+    "name": "Fake Green Heart"
+  },
+  "42": {
+    "name": "Fake Blanc"
+  },
+  "43": {
+    "name": "Fake White Heart"
+  },
+  "44": {
+    "name": "Planeptune Basilicom Staff"
+  },
+  "45": {
+    "name": "Lastation Basilicom Staff"
+  },
+  "46": {
+    "name": "Leanbox Basilicom Staff A"
+  },
+  "47": {
+    "name": "Leanbox Basilicom Staff B"
+  },
+  "48": {
+    "name": "Lowee Basilicom Staff A"
+  },
+  "49": {
+    "name": "Lowee Basilicom Staff B"
+  },
+  "50": {
+    "name": "Older Brother"
+  },
+  "51": {
+    "name": "Younger Brother"
+  },
+  "52": {
+    "name": "Monster"
+  },
+  "53": {
+    "name": "Monster A"
+  },
+  "54": {
+    "name": "Monster B"
+  },
+  "55": {
+    "name": "Monster C"
+  },
+  "56": {
+    "name": "Monster D"
+  },
+  "57": {
+    "name": "Monster E"
+  },
+  "58": {
+    "name": "Monster F"
+  },
+  "59": {
+    "name": "Monster G"
+  },
+  "60": {
+    "name": "Monster H"
+  },
+  "61": {
+    "name": "Monster I"
+  },
+  "62": {
+    "name": "Dogoo"
+  },
+  "63": {
+    "name": "Hard Breaker"
+  },
+  "64": {
+    "name": "Heavy Tank"
+  },
+  "65": {
+    "name": "Old Lady"
+  },
+  "66": {
+    "name": "Gal"
+  },
+  "67": {
+    "name": "Girl A"
+  },
+  "68": {
+    "name": "Women A"
+  },
+  "69": {
+    "name": "Boy A"
+  },
+  "70": {
+    "name": "Man A"
+  },
+  "71": {
+    "name": "Man B"
+  },
+  "72": {
+    "name": "Carriage Driver"
+  },
+  "73": {
+    "name": "Elderly"
+  },
+  "74": {
+    "name": "Narration"
+  },
+  "75": {
+    "name": "System"
+  },
+  "76": {
+    "name": "The Two"
+  },
+  "77": {
+    "name": "CPUs"
+  },
+  "78": {
+    "name": "The Four CPUs"
+  },
+  "79": {
+    "name": "The CPU Candidates"
+  },
+  "80": {
+    "name": "The Three"
+  },
+  "81": {
+    "name": "The Four"
+  },
+  "82": {
+    "name": "All"
+  },
+  "83": {
+    "name": "Everyone"
+  },
+  "84": {
+    "name": "Together"
+  },
+  "85": {
+    "name": "???"
+  },
+  "86": {
+    "name": "Brothers"
+  },
+  "87": {
+    "name": "Mysterious Man"
+  },
+  "88": {
+    "name": "Polytan"
+  },
+  "102": {
+    "name": "Plutia",
+    "portrait": "face/002",
+    "battle": "0002"
+  },
+  "107": {
+    "name": "Peashy",
+    "portrait": "face/007",
+    "battle": "0007"
+  },
+  "120": {
+    "name": "IF (child)",
+    "portrait": "face/020",
+    "battle": "0020"
+  },
+  "121": {
+    "name": "Compa (child)",
+    "portrait": "face/021",
+    "battle": "0021"
+  },
+  "122": {
+    "name": "Uzume Tennouboshi",
+    "portrait": "face/022",
+    "battle": "0022"
+  },
+  "127": {
+    "name": "Kei Jinguji",
+    "portrait": "face/027",
+    "battle": "0027"
+  },
+  "128": {
+    "name": "Mina Nishizawa",
+    "portrait": "face/028",
+    "battle": "0028"
+  },
+  "129": {
+    "name": "Chika Hakozaki",
+    "portrait": "face/029",
+    "battle": "0029"
+  },
+  "1002": {
+    "name": "Iris Heart",
+    "portrait": "trans/002",
+    "battle": "1002"
+  },
+  "1006": {
+    "name": "Purple Sister",
+    "portrait": "trans/006",
+    "battle": "1006"
+  },
+  "1007": {
+    "name": "Yellow Heart",
+    "portrait": "trans/007",
+    "battle": "1007"
+  },
+  "1008": {
+    "name": "Black Sister",
+    "portrait": "trans/008",
+    "battle": "1008"
+  },
+  "1009": {
+    "name": "White Sister (Rom)",
+    "portrait": "trans/009",
+    "battle": "1009"
+  },
+  "1010": {
+    "name": "White Sister (Ram)",
+    "portrait": "trans/010",
+    "battle": "1010"
+  },
+  "1022": {
+    "name": "Orange Heart",
+    "portrait": "trans/022",
+    "battle": "1022"
+  }
+}

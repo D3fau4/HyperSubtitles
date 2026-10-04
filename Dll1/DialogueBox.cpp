@@ -12,14 +12,54 @@
 #include "../imgui/imgui.h"
 #include <imgui_internal.h>
 
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
+#ifndef GL_GENERATE_MIPMAP
+#define GL_GENERATE_MIPMAP 0x8191
+#endif
+
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "shlwapi.lib")
 
 static constexpr struct { int character; int resourceId; } k_portraits[] = {
-    { 1, IDB_PNG1 },
-    { 3, IDB_PNG2 },
-    { 4, IDB_PNG3 },
-    { 5, IDB_PNG4 },
+    { 1, IDB_FACE_001 },
+    { 2, IDB_FACE_002 },
+    { 3, IDB_FACE_003 },
+    { 4, IDB_FACE_004 },
+    { 5, IDB_FACE_005 },
+    { 6, IDB_FACE_006 },
+    { 7, IDB_FACE_007 },
+    { 8, IDB_FACE_008 },
+    { 9, IDB_FACE_009 },
+    { 10, IDB_FACE_010 },
+    { 11, IDB_FACE_011 },
+    { 12, IDB_FACE_011 },
+    { 13, IDB_FACE_013 },
+    { 14, IDB_FACE_014 },
+    { 15, IDB_FACE_015 },
+    { 16, IDB_FACE_016 },
+    { 17, IDB_FACE_017 },
+    { 18, IDB_FACE_018 },
+    { 19, IDB_FACE_019 },
+    { 20, IDB_FACE_020 },
+    { 21, IDB_FACE_021 },
+    { 22, IDB_FACE_022 },
+    { 102, IDB_FACE_102 },
+    { 107, IDB_FACE_107 },
+    { 120, IDB_FACE_120 },
+    { 121, IDB_FACE_121 },
+    { 122, IDB_FACE_122 },
+    { 127, IDB_FACE_127 },
+    { 128, IDB_FACE_128 },
+    { 129, IDB_FACE_129 },
+    { 1002, IDB_FACE_1002 },
+    { 1006, IDB_FACE_1006 },
+    { 1007, IDB_FACE_1007 },
+    { 1008, IDB_FACE_1008 },
+    { 1009, IDB_FACE_1009 },
+    { 1010, IDB_FACE_1010 },
+    { 1022, IDB_FACE_1022 },
 };
 
 static DialogueBox::Config          s_cfg;
@@ -87,10 +127,11 @@ static GLuint LoadGLTextureFromResource(HMODULE hMod, int resourceId)
     GLuint tex = 0;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, static_cast<GLsizei>(w), static_cast<GLsizei>(h),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
     glBindTexture(GL_TEXTURE_2D, 0);
