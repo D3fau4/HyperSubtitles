@@ -15,20 +15,24 @@ character uses the game's event speaker ids (data/characters.json): event lines
 take it from the script, battle lines from the 4-digit id prefix ("battle" field).
 ja / en are present when that language has audio or text. duration is present
 only when the audio exists. source is "script" (game event script), "whisper"
-or "manual" (edited by hand; never overwritten by build).
+or "manual" (edited by hand; never overwritten by build). Whisper text is cleaned
+of runaway repetitions ("NOOOO..." x1000 becomes "NOOO").
 
 Commands:
   build             merge audio, Whisper transcripts and event script text into data/lines
   export-po         write a PO for translation (msgctxt = CATEGORY/id, msgstr = es)
   import-po         read es translations back from a PO
   export-subtitles  write the subtitles.json loaded by the DLL (es, else en; one entry
-                    per language that has audio, each with its own duration)
+                    per language that has audio, each with its own duration). Line
+                    breaks are collapsed: the game's script wraps for its own, narrower
+                    text box, so the DLL re-wraps to the subtitle width.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import struct
 import sys
 from pathlib import Path
@@ -102,6 +106,13 @@ def default_character(category: str, voice_id: str, script: dict | None, battle:
     return -1
 
 
+REPEAT = re.compile(r"(.{1,12}?)\1{4,}", re.S)
+
+
+def clean_whisper(text: str) -> str:
+    return REPEAT.sub(r"\1\1\1", text).strip()
+
+
 def read_transcript(transcripts: tuple[Path, bool] | None, folder: str, category: str, voice_id: str) -> str | None:
     if transcripts is None:
         return None
@@ -161,7 +172,7 @@ def build(args: argparse.Namespace) -> int:
                     elif wav is not None or "duration" in current:
                         text = read_transcript(transcripts[lang], folder, category, voice_id)
                         if text is not None:
-                            updated["text"] = text
+                            updated["text"] = clean_whisper(text)
                             updated["source"] = "whisper"
                 if updated:
                     entry[lang] = {key: updated[key] for key in ("text", "source", "duration") if key in updated}
@@ -282,6 +293,7 @@ def export_subtitles(args: argparse.Namespace) -> int:
                 text = entry.get("es") or entry.get("en", {}).get("text")
                 if not text:
                     continue
+                text = " ".join(text.split())
                 subtitles.append({
                     "audioFile": f"/{folder}/{category}/{voice_id}.hca",
                     "character": entry.get("character", -1),

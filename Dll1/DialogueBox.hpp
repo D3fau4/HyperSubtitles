@@ -5,11 +5,13 @@ namespace DialogueBox
     struct Config
     {
         float x = -1.0f; // px, -1 = centered horizontally
-        float y = -1.0f; // px, -1 = 79% of screen height
+        float y = -1.0f; // px, top of a one-line box, -1 = 79% of screen height; extra lines grow upwards
         float width = -1.0f; // px, -1 = 88% of screen width
         float portraitHeight = 75.0f;  // px
         float portraitAspect = 2.0f;   // width/height ratio (1024x512 = 2.0)
         float fontSize = 30.0f;        // px
+        int   maxLines = 2;            // above this the box widens, then the font shrinks
+        float minFontScale = 0.75f;    // smallest font size allowed when shrinking (x fontSize)
         // Individual padding (px)
         float paddingLeft   = 0.0f;
         float paddingRight  = 0.0f;

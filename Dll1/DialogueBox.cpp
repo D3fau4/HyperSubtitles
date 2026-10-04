@@ -207,7 +207,6 @@ void DialogueBox::Render()
     const float PORT_H = s_cfg.portraitHeight;
     const float PORT_W = PORT_H * s_cfg.portraitAspect;
     ImFont*     font   = s_font ? s_font : ImGui::GetDefaultFont();
-    const float fontSize = s_cfg.fontSize;
     const float alpha  = s_cfg.opacity;
 
     auto applyAlpha = [&](const float col[4]) -> ImU32 {
@@ -218,17 +217,41 @@ void DialogueBox::Render()
             static_cast<int>(col[3] * 255 * alpha));
     };
 
-    // Measure text with a generous max wrap width so the box shrinks to fit the content
-    const float maxTextW = (s_cfg.width >= 0.0f)
-        ? (s_cfg.width - PAD_L - PORT_W - PAD_IN - PAD_R)
-        : (disp.x * 0.88f - PAD_L - PORT_W - PAD_IN - PAD_R);
-    ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, maxTextW, s_text);
+    // Measure text with a generous max wrap width so the box shrinks to fit the content.
+    // Too many lines: widen the box up to the screen, then shrink the font.
+    const float SIDE_W   = PAD_L + PORT_W + PAD_IN + PAD_R;
+    const float screenTextW = ImMax(disp.x * 0.96f - SIDE_W, 1.0f);
+    const float maxTextW = ImMin(screenTextW, (s_cfg.width >= 0.0f)
+        ? (s_cfg.width - SIDE_W)
+        : (disp.x * 0.88f - SIDE_W));
+    const int   maxLines = ImMax(s_cfg.maxLines, 1);
+    const float minFontSize = s_cfg.fontSize * ImClamp(s_cfg.minFontScale, 0.1f, 1.0f);
 
-    // Box sized to content
-    const float BOX_W  = PAD_L + PORT_W + PAD_IN + textSize.x + PAD_R;
+    float  fontSize = s_cfg.fontSize;
+    float  wrapW    = maxTextW;
+    ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
+    auto   lineCount = [&]() { return static_cast<int>(textSize.y / fontSize + 0.5f); };
+    bool   widened  = false;
+    if (lineCount() > maxLines && wrapW < screenTextW)
+    {
+        wrapW    = screenTextW;
+        widened  = true;
+        textSize = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
+    }
+    while (lineCount() > maxLines && fontSize - 1.0f >= minFontSize)
+    {
+        fontSize -= 1.0f;
+        textSize  = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
+    }
+
+    // Box sized to content; the one-line height is anchored at cfg.y and extra lines grow upwards
+    const float BOX_W  = SIDE_W + textSize.x;
     const float BOX_H  = ImMax(PORT_H, textSize.y) + PAD_T + PAD_B;
-    const float BOX_X  = (s_cfg.x >= 0.0f) ? s_cfg.x : (disp.x - BOX_W) * 0.5f;
-    const float BOX_Y  = (s_cfg.y >= 0.0f) ? s_cfg.y : disp.y * 0.79f;
+    const float baseH  = ImMax(PORT_H, fontSize) + PAD_T + PAD_B;
+    float BOX_X = (s_cfg.x >= 0.0f && !widened) ? s_cfg.x : (disp.x - BOX_W) * 0.5f;
+    float BOX_Y = ((s_cfg.y >= 0.0f) ? s_cfg.y : disp.y * 0.79f) - (BOX_H - baseH);
+    BOX_X = ImClamp(BOX_X, 0.0f, ImMax(disp.x - BOX_W, 0.0f));
+    BOX_Y = ImClamp(BOX_Y, 0.0f, ImMax(disp.y - BOX_H, 0.0f));
 
     const ImVec2 p0(BOX_X, BOX_Y);
     const ImVec2 p1(BOX_X + BOX_W, BOX_Y + BOX_H);
@@ -247,7 +270,7 @@ void DialogueBox::Render()
     }
 
     const float textAreaX = BOX_X + PAD_L + PORT_W + PAD_IN;
-    const float textAreaW = textSize.x;
+    const float textAreaW = wrapW;
     const float textX = textAreaX + s_cfg.textXOffset;
     const float textY = BOX_Y + (BOX_H - textSize.y) * 0.5f + s_cfg.textYOffset;
 
@@ -296,6 +319,8 @@ void DialogueBox::DrawDebugWindow()
 
     ImGui::SeparatorText("Text");
     ImGui::DragFloat("Font Size",    &s_cfg.fontSize,    0.5f,  8.0f,  96.0f);
+    ImGui::SliderInt("Max Lines",    &s_cfg.maxLines,    1, 6);
+    ImGui::SliderFloat("Min Font Scale", &s_cfg.minFontScale, 0.5f, 1.0f);
     ImGui::DragFloat("X Offset",     &s_cfg.textXOffset, 0.5f, -128.0f, 128.0f);
     ImGui::DragFloat("Y Offset",     &s_cfg.textYOffset, 0.5f, -128.0f, 128.0f);
 
