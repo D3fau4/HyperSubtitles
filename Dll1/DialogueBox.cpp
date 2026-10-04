@@ -141,9 +141,7 @@ static GLuint LoadGLTextureFromResource(HMODULE hMod, int resourceId)
 
 void DialogueBox::OnImGuiInit()
 {
-    // 0x0020-0x00FF = Basic Latin + Latin-1 Supplement (covers á é í ó ú ñ ü and all Spanish chars)
-    static const ImWchar k_latinRanges[] = { 0x0020, 0x00FF, 0 };
-    s_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("FOT-NewRodinPro-EB.otf", 36.0f, nullptr, k_latinRanges);
+    s_font = DialogueBoxCore::AddDialogueFont(ImGui::GetIO().Fonts, DialogueBoxCore::kFontFile);
     if (!s_font)
         Logger::log("DialogueBox: font not found, using default");
 
@@ -196,86 +194,10 @@ void DialogueBox::Render()
     if (!s_text || ImGui::GetTime() >= s_endTime)
         return;
 
-    ImDrawList* dl   = ImGui::GetForegroundDrawList();
-    ImVec2      disp = ImGui::GetIO().DisplaySize;
-
-    const float PAD_L  = s_cfg.paddingLeft;
-    const float PAD_R  = s_cfg.paddingRight;
-    const float PAD_T  = s_cfg.paddingTop;
-    const float PAD_B  = s_cfg.paddingBottom;
-    const float PAD_IN = s_cfg.paddingInner;
-    const float PORT_H = s_cfg.portraitHeight;
-    const float PORT_W = PORT_H * s_cfg.portraitAspect;
-    ImFont*     font   = s_font ? s_font : ImGui::GetDefaultFont();
-    const float alpha  = s_cfg.opacity;
-
-    auto applyAlpha = [&](const float col[4]) -> ImU32 {
-        return IM_COL32(
-            static_cast<int>(col[0] * 255),
-            static_cast<int>(col[1] * 255),
-            static_cast<int>(col[2] * 255),
-            static_cast<int>(col[3] * 255 * alpha));
-    };
-
-    // Measure text with a generous max wrap width so the box shrinks to fit the content.
-    // Too many lines: widen the box up to the screen, then shrink the font.
-    const float SIDE_W   = PAD_L + PORT_W + PAD_IN + PAD_R;
-    const float screenTextW = ImMax(disp.x * 0.96f - SIDE_W, 1.0f);
-    const float maxTextW = ImMin(screenTextW, (s_cfg.width >= 0.0f)
-        ? (s_cfg.width - SIDE_W)
-        : (disp.x * 0.88f - SIDE_W));
-    const int   maxLines = ImMax(s_cfg.maxLines, 1);
-    const float minFontSize = s_cfg.fontSize * ImClamp(s_cfg.minFontScale, 0.1f, 1.0f);
-
-    float  fontSize = s_cfg.fontSize;
-    float  wrapW    = maxTextW;
-    ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
-    auto   lineCount = [&]() { return static_cast<int>(textSize.y / fontSize + 0.5f); };
-    bool   widened  = false;
-    if (lineCount() > maxLines && wrapW < screenTextW)
-    {
-        wrapW    = screenTextW;
-        widened  = true;
-        textSize = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
-    }
-    while (lineCount() > maxLines && fontSize - 1.0f >= minFontSize)
-    {
-        fontSize -= 1.0f;
-        textSize  = font->CalcTextSizeA(fontSize, FLT_MAX, wrapW, s_text);
-    }
-
-    // Box sized to content; the one-line height is anchored at cfg.y and extra lines grow upwards
-    const float BOX_W  = SIDE_W + textSize.x;
-    const float BOX_H  = ImMax(PORT_H, textSize.y) + PAD_T + PAD_B;
-    const float baseH  = ImMax(PORT_H, fontSize) + PAD_T + PAD_B;
-    float BOX_X = (s_cfg.x >= 0.0f && !widened) ? s_cfg.x : (disp.x - BOX_W) * 0.5f;
-    float BOX_Y = ((s_cfg.y >= 0.0f) ? s_cfg.y : disp.y * 0.79f) - (BOX_H - baseH);
-    BOX_X = ImClamp(BOX_X, 0.0f, ImMax(disp.x - BOX_W, 0.0f));
-    BOX_Y = ImClamp(BOX_Y, 0.0f, ImMax(disp.y - BOX_H, 0.0f));
-
-    const ImVec2 p0(BOX_X, BOX_Y);
-    const ImVec2 p1(BOX_X + BOX_W, BOX_Y + BOX_H);
-
-    dl->AddRectFilled(p0, p1, applyAlpha(s_cfg.bgColor), s_cfg.rounding);
-    dl->AddRect(p0, p1, applyAlpha(s_cfg.borderColor), s_cfg.rounding, 0, s_cfg.borderThickness);
-
-    auto it = s_textures.find(s_character);
-    if (it != s_textures.end())
-    {
-        const ImVec2 imgP0(BOX_X + PAD_L, BOX_Y + (BOX_H - PORT_H) * 0.5f);
-        const ImVec2 imgP1(imgP0.x + PORT_W, imgP0.y + PORT_H);
-        dl->AddImage(static_cast<ImTextureID>(it->second), imgP0, imgP1,
-                     ImVec2(0, 0), ImVec2(1, 1),
-                     IM_COL32(255, 255, 255, static_cast<int>(255 * alpha)));
-    }
-
-    const float textAreaX = BOX_X + PAD_L + PORT_W + PAD_IN;
-    const float textAreaW = wrapW;
-    const float textX = textAreaX + s_cfg.textXOffset;
-    const float textY = BOX_Y + (BOX_H - textSize.y) * 0.5f + s_cfg.textYOffset;
-
-    dl->AddText(font, fontSize, ImVec2(textX, textY),
-                applyAlpha(s_cfg.textColor), s_text, nullptr, textAreaW);
+    ImFont* font = s_font ? s_font : ImGui::GetDefaultFont();
+    auto    it   = s_textures.find(s_character);
+    DialogueBoxCore::Draw(ImGui::GetForegroundDrawList(), s_cfg, font, ImGui::GetIO().DisplaySize, s_text,
+                          it != s_textures.end() ? static_cast<ImTextureID>(it->second) : ImTextureID_Invalid);
 }
 
 static int  s_previewCharacter = 1;
@@ -345,6 +267,9 @@ void DialogueBox::DrawDebugWindow()
         Show(nullptr, 0.0f, 0);
 
     ImGui::Separator();
+    if (ImGui::Button("Save dialoguebox.json"))
+        Logger::log(DialogueBoxCore::SaveConfigFile("./dialoguebox.json", s_cfg)
+            ? "DialogueBox: saved dialoguebox.json" : "DialogueBox: failed to save dialoguebox.json");
     ImGui::Text("Box @ (%.0f, %.0f)",
         s_cfg.x >= 0 ? s_cfg.x : (disp.x * 0.5f),
         s_cfg.y >= 0 ? s_cfg.y : disp.y * 0.79f);

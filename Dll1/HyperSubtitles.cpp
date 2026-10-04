@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-#include "json.hpp"
+#include "../shared/json.hpp"
 
 #include "../minhook/include/MinHook.h"
 #include "../imgui/imgui.h"
@@ -75,10 +75,14 @@ bool SetupHooks(DWORD entryPoint, uintptr_t base)
         LoadSubtitles("./subtitles.json", *g_subtitles);
     }
 
-    DialogueBox::Config cfg;
-    cfg.x = 600.0f;
-    cfg.y = 1000.0f;
-    cfg.width = 1200.0f;
+    DialogueBox::Config cfg = DialogueBoxCore::DefaultGameConfig();
+    if (std::filesystem::exists("./dialoguebox.json")) {
+        std::string error;
+        if (DialogueBoxCore::LoadConfigFile("./dialoguebox.json", cfg, &error))
+            Logger::log("Loaded dialoguebox.json");
+        else
+            Logger::log("Failed to load dialoguebox.json (%s), using defaults", error.c_str());
+    }
     DialogueBox::SetConfig(cfg);
 
 	switch (entryPoint) {

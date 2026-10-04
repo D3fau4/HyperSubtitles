@@ -95,7 +95,9 @@
     <ClInclude Include="dllmain.hpp" />
     <ClInclude Include="HyperSubtitles.hpp" />
     <ClInclude Include="ImGuiRenderer.hpp" />
-    <ClInclude Include="json.hpp" />
+    <ClInclude Include="..\shared\json.hpp" />
+    <ClInclude Include="..\shared\DialogueBoxCore.hpp" />
+    <ClInclude Include="..\shared\SubtitleText.hpp" />
     <ClInclude Include="Logger.hpp" />
     <ClInclude Include="Rebirth_offsets.hpp" />
     <ClInclude Include="resource.h" />
@@ -108,6 +110,7 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\imgui\backends\imgui_impl_opengl2.cpp" />
     <ClCompile Include="..\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\shared\DialogueBoxCore.cpp" />
     <ClCompile Include="DialogueBox.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="HyperSubtitles.cpp" />

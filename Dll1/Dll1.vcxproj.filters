@@ -19,6 +19,9 @@
     <Filter Include="faces">
       <UniqueIdentifier>{55a702e0-08cb-4a4b-8453-e80db0f46763}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shared">
+      <UniqueIdentifier>{b3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\minhook\include\MinHook.h">
@@ -45,8 +48,14 @@
     <ClInclude Include="..\imgui\backends\imgui_impl_win32.h">
       <Filter>ImGUI</Filter>
     </ClInclude>
-    <ClInclude Include="json.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\shared\json.hpp">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\DialogueBoxCore.hpp">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SubtitleText.hpp">
+      <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
@@ -91,6 +100,9 @@
     </ClCompile>
     <ClCompile Include="DialogueBox.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\DialogueBoxCore.cpp">
+      <Filter>Shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
