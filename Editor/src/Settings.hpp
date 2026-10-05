@@ -9,7 +9,7 @@ struct Settings
     std::string gameDir;        // game install: font, data/SOUND.xsb, data/SOUND.xwb
     std::string portraitsDir;   // PNG portraits (<id>.png); empty = <dataDir>/../Dll1/faces
     std::string uiFontPath;     // optional font for the editor UI; empty = default + game font
-    float       uiFontSize = 16.0f;
+    float       uiFontSize = 20.0f;
 
     int   previewWidth  = 1920;
     int   previewHeight = 1080;
