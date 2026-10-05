@@ -30,6 +30,9 @@ Editor para traducir los subtítulos de voz. Trabaja directamente sobre
 - **Exportar**: genera `data/subtitles.json` (idéntico a `lines.py export-subtitles`) y,
   opcionalmente, lo instala junto al juego con `dialoguebox.json`.
 - Deshacer/rehacer, autoguardado y panel para editar la caja (`dialoguebox.json`).
+- El texto japonés de la interfaz usa Noto Sans JP incrustada en el ejecutable
+  (`external/fonts/`, licencia OFL), así que se ve bien aunque el PC o el juego no tengan
+  fuentes japonesas.
 
 ## Atajos
 

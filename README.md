@@ -31,7 +31,7 @@ runs everything from the game install: extracts `VOICE` and `VOICE_EN`, transcri
 
 `tools\lines\lines.py` also has `export-po` / `import-po` to translate with a PO editor (`--language` sets the PO header), and `export-subtitles` to regenerate `data/subtitles.json`. Line breaks typed in a translation are kept; the English fallback is shown on one line and re-wrapped by the DLL.
 
-- `Editor/`: translation editor (C++ / SDL3 / Dear ImGui, Windows and Linux). It edits `data/lines/` directly, plays the voices from the game's XACT banks and previews the dialogue box with the same drawing code as the DLL (`shared/DialogueBoxCore`). See `Editor/README.md`.
+- `Editor/`: translation editor (C++ / SDL3 / Dear ImGui, Windows and Linux). It edits `data/lines/` directly, plays the voices from the game's XACT banks and previews the dialogue box with the same drawing code as the DLL (`shared/DialogueBoxCore`). See `Editor/README.md`. Its UI embeds a subset of Noto Sans JP (`external/fonts/`, OFL) for the Japanese text.
 - `data/dialoguebox.json`: dialogue box layout and colors, read by the DLL and the editor. Copy it next to the game executable with `subtitles.json` (the editor's "export and install" does both).
 - `tools/extract/`: voice WAVs from the XACT banks (`SOUND.xsb` + `SOUND.xwb`), a `DW_PACK` `.pac` extractor (`extract_pac.py`), event script text (`parse_event_scripts.py`) and character portraits for the DLL (`extract_portraits.py --game ...`, then wire new ones in `Dll1/resource.h`, `HyperSubtitles.rc` and `k_portraits`). See its `README.md`.
 - `tools/transcribe/`: Whisper transcription. Extracted audio goes in `tools/transcribe/wav_out/`, which is not tracked.

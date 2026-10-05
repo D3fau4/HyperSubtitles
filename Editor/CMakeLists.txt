@@ -41,6 +41,16 @@ add_library(editor_core STATIC
 target_include_directories(editor_core PUBLIC ${REPO_ROOT}/shared src)
 target_link_libraries(editor_core PUBLIC imgui)
 
+# Japanese font for the UI (ja transcriptions), embedded so the exe needs no extra files.
+set(JP_FONT ${REPO_ROOT}/external/fonts/NotoSansJP-Regular.otf)
+set(JP_FONT_CPP ${CMAKE_BINARY_DIR}/generated/noto_sans_jp.cpp)
+add_custom_command(
+    OUTPUT ${JP_FONT_CPP}
+    COMMAND ${CMAKE_COMMAND} -DINPUT=${JP_FONT} -DOUTPUT=${JP_FONT_CPP} -DSYMBOL=g_notoSansJp
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_file.cmake
+    DEPENDS ${JP_FONT} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_file.cmake
+    COMMENT "Embedding NotoSansJP-Regular.otf")
+
 add_executable(HyperSubtitlesEditor WIN32
     src/main.cpp
     src/App.cpp
@@ -49,7 +59,8 @@ add_executable(HyperSubtitlesEditor WIN32
     src/Preview.cpp
     src/Settings.cpp
     src/StbImpl.cpp
-    src/XactAudio.cpp)
+    src/XactAudio.cpp
+    ${JP_FONT_CPP})
 target_include_directories(HyperSubtitlesEditor PRIVATE ${REPO_ROOT}/external/stb)
 target_link_libraries(HyperSubtitlesEditor PRIVATE editor_core imgui)
 if(WIN32)

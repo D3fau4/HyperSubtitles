@@ -17,6 +17,10 @@
 
 namespace fs = std::filesystem;
 
+// external/fonts/NotoSansJP-Regular.otf, embedded by CMake (cmake/embed_file.cmake)
+extern const unsigned char g_notoSansJp[];
+extern const unsigned g_notoSansJp_size;
+
 namespace
 {
     const ImVec4 kStatusColors[3] = {
@@ -106,16 +110,6 @@ void App::SetupUiFonts(float dpiScale)
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/TTF/DejaVuSans.ttf",
     };
-    // Japanese fallbacks (the ja transcriptions): the game font first.
-    std::vector<std::string> japanese;
-    if (!m_settings.gameDir.empty())
-        japanese.push_back(U8String(U8Path(m_settings.gameDir) / DialogueBoxCore::kFontFile));
-    for (const char* f : { "C:/Windows/Fonts/YuGothM.ttc", "C:/Windows/Fonts/meiryo.ttc", "C:/Windows/Fonts/msgothic.ttc",
-                           "/System/Library/Fonts/Hiragino Sans GB.ttc",
-                           "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-                           "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc" })
-        japanese.emplace_back(f);
-
     std::error_code ec;
     auto exists = [&](const std::string& path) { return !path.empty() && fs::exists(U8Path(path), ec); };
 
@@ -128,14 +122,12 @@ void App::SetupUiFonts(float dpiScale)
     if (!font)
         font = io.Fonts->AddFontDefaultVector();
 
-    for (const std::string& f : japanese)
-        if (exists(f))
-        {
-            ImFontConfig cfg;
-            cfg.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(f.c_str(), 0.0f, &cfg);
-            break;
-        }
+    // Japanese (the ja transcriptions): Noto Sans JP embedded in the exe, so it works
+    // whatever fonts the PC or the game install have. Only used for glyphs the UI font lacks.
+    ImFontConfig cfg;
+    cfg.MergeMode = true;
+    cfg.FontDataOwnedByAtlas = false;
+    io.Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(g_notoSansJp), int(g_notoSansJp_size), 0.0f, &cfg);
 }
 
 bool App::Init(SDL_Window* window, const char* glslVersion, const Options& options)
