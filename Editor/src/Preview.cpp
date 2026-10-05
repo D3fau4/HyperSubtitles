@@ -63,7 +63,6 @@ void Preview::Shutdown()
     if (m_fbo) gl::DeleteFramebuffers(1, &m_fbo);
     if (m_fboTexture) gl::DeleteTextures(1, &m_fboTexture);
     m_fbo = m_fboTexture = 0;
-    ClearBackgroundImage();
     for (auto& [id, tex] : m_portraitFiles)
         gl::DeleteTextures(1, &tex);
     m_portraitFiles.clear();
@@ -155,25 +154,6 @@ gl::GLuint Preview::PortraitTexture(int character) const
     return tex != m_portraitFiles.end() ? tex->second : 0;
 }
 
-bool Preview::SetBackgroundImage(const std::string& path, std::string& error)
-{
-    ClearBackgroundImage();
-    m_bgTexture = LoadTexture(path, false);
-    if (!m_bgTexture)
-    {
-        error = "cannot load image " + path;
-        return false;
-    }
-    return true;
-}
-
-void Preview::ClearBackgroundImage()
-{
-    if (m_bgTexture)
-        gl::DeleteTextures(1, &m_bgTexture);
-    m_bgTexture = 0;
-}
-
 void Preview::EnsureFramebuffer(int width, int height)
 {
     if (m_fbo && width == m_width && height == m_height)
@@ -206,7 +186,7 @@ void Preview::EnsureFramebuffer(int width, int height)
 }
 
 void Preview::Render(const DialogueBoxCore::Config& cfg, const std::string& text, int character,
-                     int width, int height, const float bgColor[3], bool useBgImage, float rasterScale)
+                     int width, int height, const float bgColor[3], float rasterScale)
 {
     if (!m_ctx)
         return;
@@ -237,8 +217,6 @@ void Preview::Render(const DialogueBoxCore::Config& cfg, const std::string& text
     // Anti-aliased edges one screen pixel wide, as ImGui does on high-DPI screens.
     ImGui::GetForegroundDrawList()->_FringeScale = 1.0f / rasterScale;
     ImGui::GetBackgroundDrawList()->_FringeScale = 1.0f / rasterScale;
-    if (useBgImage && m_bgTexture)
-        ImGui::GetBackgroundDrawList()->AddImage(ImTextureID(m_bgTexture), ImVec2(0, 0), io.DisplaySize);
     if (!text.empty())
     {
         const gl::GLuint portrait = PortraitTexture(character);

@@ -36,7 +36,8 @@ private:
     // Data
     void LoadProject();
     bool Save();
-    void Export(bool install);
+    // Writes subtitles.json to out (empty = <data>/subtitles.json); install also copies it to the game.
+    void Export(bool install, const std::string& out = {});
     void ReloadGameAssets();
     void ApplySettingsChange();
 
@@ -104,10 +105,11 @@ private:
     bool m_quit = false;
 
     // Async SDL file dialogs
-    enum class DialogTarget { None, DataDir, GameDir, PortraitsDir, Background, SavePng };
+    enum class DialogTarget { None, DataDir, GameDir, PortraitsDir, SavePng, ExportSubtitles };
     std::mutex m_dialogMutex;
     DialogTarget m_dialogTarget = DialogTarget::None;
     std::string  m_dialogResult;
+    std::string  m_dialogDefault;  // default location, alive while the dialog is open
     bool         m_dialogDone = false;
     void OpenDialog(DialogTarget target);
     static void DialogCallback(void* userdata, const char* const* filelist, int filter);

@@ -123,14 +123,16 @@ int main(int argc, char** argv)
         project.SetText(a, "Primera línea\nsegunda línea");  // edit after review -> translated
         CHECK(Project::GetStatus(*project.lines[a].entry) == Status::Translated);
 
-        project.SetDisplayDuration(a, "ja", 3.25);
-        const ojson& ja = (*project.lines[a].entry)["ja"];
-        CHECK(Project::EffectiveDuration(*project.lines[a].entry, "ja") == 3.25);
-        CHECK(std::prev(ja.end()).key() == "displayDuration");
-        project.SetDisplayDuration(a, "ja", 4.0);
-        project.SetDisplayDuration(a, "ja", std::nullopt);
-        CHECK(!Project::DisplayDurationOverride(*project.lines[a].entry, "ja"));
-        project.SetDisplayDuration(a, "en", 5.5);
+        project.SetDisplayDuration(a, 3.25);
+        const ojson& ea = *project.lines[a].entry;
+        CHECK(Project::EffectiveDuration(ea, "ja") == 3.25);
+        CHECK(Project::EffectiveDuration(ea, "en") == 3.25);
+        CHECK(std::prev(ea.end()).key() == "status" && std::prev(ea.end(), 2).key() == "displayDuration");
+        project.SetDisplayDuration(a, 4.0);
+        project.SetDisplayDuration(a, std::nullopt);
+        CHECK(!Project::DisplayDurationOverride(*project.lines[a].entry));
+        CHECK(Project::EffectiveDuration(*project.lines[a].entry, "ja") == Project::AudioDuration(*project.lines[a].entry, "ja"));
+        project.SetDisplayDuration(a, 5.5);
 
         project.SetCharacter(b, 3);
         project.SetText(b, "¡Ahí!");
@@ -144,7 +146,7 @@ int main(int argc, char** argv)
         CHECK(reloaded.Load(U8String(rt), error));
         const size_t ra = FindLine(reloaded, "80101001");
         CHECK(ra != SIZE_MAX && Project::Text(*reloaded.lines[ra].entry) == "Primera línea\nsegunda línea");
-        CHECK(ra != SIZE_MAX && *Project::DisplayDurationOverride(*reloaded.lines[ra].entry, "en") == 5.5);
+        CHECK(ra != SIZE_MAX && *Project::DisplayDurationOverride(*reloaded.lines[ra].entry) == 5.5);
     }
 
     // --- Export for compare_export.cmake

@@ -10,12 +10,11 @@ struct Settings
     std::string portraitsDir;   // PNG portraits (<id>.png); empty = <dataDir>/../Dll1/faces
     std::string uiFontPath;     // optional font for the editor UI; empty = default + game font
     float       uiFontSize = 20.0f;
+    std::string language = "auto"; // locale in Editor/i18n, or "auto" = system language
 
     int   previewWidth  = 1920;
     int   previewHeight = 1080;
     float previewScale  = -1.0f; // -1 = fit the dialogue box, 0 = fit the whole screen, >0 = fixed zoom
-    bool  useBackgroundImage = false;
-    std::string backgroundImage;
     float backgroundColor[3] = { 0.10f, 0.10f, 0.12f };
 
     int   autosaveSeconds = 60;  // 0 = off

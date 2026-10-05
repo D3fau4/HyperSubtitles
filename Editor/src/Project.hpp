@@ -62,7 +62,8 @@ public:
     static std::string   SourceText(const ojson& e, const char* lang); // ja / en text
     static bool          HasAudio(const ojson& e, const char* lang);
     static double        AudioDuration(const ojson& e, const char* lang);   // 0 if none
-    static std::optional<double> DisplayDurationOverride(const ojson& e, const char* lang);
+    // Time on screen of the translation, used with every audio language; nullopt = each audio's duration.
+    static std::optional<double> DisplayDurationOverride(const ojson& e);
     static double        EffectiveDuration(const ojson& e, const char* lang);
     static Status        GetStatus(const ojson& e);
     static int           GetCharacter(const ojson& e);
@@ -75,7 +76,7 @@ public:
     void SetText(size_t line, const std::string& text);
     void SetStatus(size_t line, Status s);
     void SetCharacter(size_t line, int character);
-    void SetDisplayDuration(size_t line, const char* lang, std::optional<double> seconds);
+    void SetDisplayDuration(size_t line, std::optional<double> seconds);
     // Sets the same translation on several lines as one undo step.
     void SetTextMany(const std::vector<size_t>& lines, const std::string& text);
 

@@ -14,24 +14,32 @@ archivo con esa estructura es una categoría, p. ej. `battle.json` -> BATTLE) y 
   del tamaño de la resolución elegida. El zoom **Caja** (por defecto) amplía la caja para leerla
   cómodamente; con **100%** cada píxel del juego es un píxel de pantalla. Con cualquier zoom
   distinto de 100% la caja se renderiza directamente al tamaño mostrado (misma maquetación,
-  mismos saltos de línea) para que se vea nítida; "100%" y "Guardar PNG" son los píxeles exactos. Se puede poner de fondo una captura del juego y guardar la preview como PNG para
+  mismos saltos de línea) para que se vea nítida; "100%" y "Guardar PNG" son los píxeles exactos. La preview se puede guardar como PNG para
   compararla con una captura real.
 - **Voces**: reproduce el audio japonés (`VOICE`) e inglés (`VOICE_EN`) leyendo
   directamente `data/SOUND.xsb` y `data/SOUND.xwb` de la carpeta del juego (MS-ADPCM).
 - **Personaje**: selector con nombre y retrato (`data/characters.json` + `Dll1/faces`).
 - **Traducción**: el campo `text`. Enter inserta un salto de línea, que el juego respeta.
   Si está vacío, el juego muestra el inglés.
-- **Duración en pantalla**: `displayDuration` opcional por idioma de audio; "Restablecer"
-  vuelve a la duración de la voz.
+- **Duración en pantalla**: las duraciones de las voces JA/EN son solo informativas. La
+  traducción tiene un `displayDuration` opcional que se usa con las dos voces; "Restablecer"
+  lo quita y cada voz vuelve a usar su propia duración.
 - **Estados**: escribir una traducción la marca como *traducida*; editar una línea *revisada*
   la devuelve a *traducida*; vaciarla la deja *pendiente*.
 - **Memoria de traducción**: sugiere las traducciones de las líneas con el mismo texto en
   inglés y permite aplicar la actual a todas las idénticas sin traducir.
 - **Avisos**: caracteres que la fuente del juego no tiene, texto que obliga a ensanchar la
   caja o encoger la fuente, y demasiados caracteres por segundo para la duración.
-- **Exportar**: genera `data/subtitles.json` (idéntico a `lines.py export-subtitles`) y,
-  opcionalmente, lo instala junto al juego con `dialoguebox.json`.
+- **Exportar**: guarda `subtitles.json` (idéntico a `lines.py export-subtitles`) donde elijas en
+  una ventana de guardado (por defecto en `data/`). "Exportar e instalar en el juego" escribe
+  `data/subtitles.json` y lo copia junto al juego con `dialoguebox.json`.
 - Deshacer/rehacer, autoguardado y panel para editar la caja (`dialoguebox.json`).
+- **Idiomas**: la interfaz está en español e inglés (Ajustes > Interfaz > Idioma; por
+  defecto, el del sistema). Usa el sistema de i18n de borealis: un JSON por idioma en
+  `Editor/i18n/<locale>/editor.json`, incrustado en el ejecutable, con las cadenas
+  referenciadas como `"editor/<sección>/<clave>"_i18n` o `i18n::getStr(clave, args...)` (`{}`
+  como en fmt). Lo que falta en un idioma sale en inglés (`en-US`). Para añadir uno, crea
+  `Editor/i18n/<locale>/editor.json` con su `language_name`.
 - El texto japonés de la interfaz usa Noto Sans JP incrustada en el ejecutable
   (`external/fonts/`, licencia OFL), así que se ve bien aunque el PC o el juego no tengan
   fuentes japonesas.

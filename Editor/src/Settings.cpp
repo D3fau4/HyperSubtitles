@@ -73,11 +73,10 @@ bool Settings::Load()
     Read(j, "portraitsDir", portraitsDir);
     Read(j, "uiFontPath", uiFontPath);
     Read(j, "uiFontSize", uiFontSize);
+    Read(j, "language", language);
     Read(j, "previewWidth", previewWidth);
     Read(j, "previewHeight", previewHeight);
     Read(j, "previewScale", previewScale);
-    Read(j, "useBackgroundImage", useBackgroundImage);
-    Read(j, "backgroundImage", backgroundImage);
     if (j.contains("backgroundColor") && j["backgroundColor"].is_array() && j["backgroundColor"].size() == 3)
         for (int i = 0; i < 3; ++i)
             if (j["backgroundColor"][i].is_number())
@@ -97,11 +96,10 @@ bool Settings::Save() const
     j["portraitsDir"] = portraitsDir;
     j["uiFontPath"] = uiFontPath;
     j["uiFontSize"] = uiFontSize;
+    j["language"] = language;
     j["previewWidth"] = previewWidth;
     j["previewHeight"] = previewHeight;
     j["previewScale"] = previewScale;
-    j["useBackgroundImage"] = useBackgroundImage;
-    j["backgroundImage"] = backgroundImage;
     j["backgroundColor"] = { backgroundColor[0], backgroundColor[1], backgroundColor[2] };
     j["autosaveSeconds"] = autosaveSeconds;
     j["maxCharsPerSecond"] = maxCharsPerSecond;

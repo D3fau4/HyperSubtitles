@@ -51,16 +51,28 @@ add_custom_command(
     DEPENDS ${JP_FONT} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_file.cmake
     COMMENT "Embedding NotoSansJP-Regular.otf")
 
+# Translations (i18n/<locale>/<file>.json), embedded like the font.
+file(GLOB_RECURSE I18N_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/i18n/*.json)
+set(I18N_CPP ${CMAKE_BINARY_DIR}/generated/i18n.cpp)
+add_custom_command(
+    OUTPUT ${I18N_CPP}
+    COMMAND ${CMAKE_COMMAND} -DI18N_DIR=${CMAKE_CURRENT_SOURCE_DIR}/i18n -DOUTPUT=${I18N_CPP}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_i18n.cmake
+    DEPENDS ${I18N_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/embed_i18n.cmake
+    COMMENT "Embedding translations")
+
 add_executable(HyperSubtitlesEditor WIN32
     src/main.cpp
     src/App.cpp
     src/Analysis.cpp
     src/Gl.cpp
+    src/I18n.cpp
     src/Preview.cpp
     src/Settings.cpp
     src/StbImpl.cpp
     src/XactAudio.cpp
-    ${JP_FONT_CPP})
+    ${JP_FONT_CPP}
+    ${I18N_CPP})
 target_include_directories(HyperSubtitlesEditor PRIVATE ${REPO_ROOT}/external/stb)
 target_link_libraries(HyperSubtitlesEditor PRIVATE editor_core imgui)
 if(WIN32)

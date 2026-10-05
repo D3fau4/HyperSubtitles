@@ -31,7 +31,7 @@ std::string BuildSubtitlesJson(const Project& project, size_t* count)
             sub["audioFile"] = std::string("/") + lang.folder + "/" + project.categories[line->category] + "/" + line->id + ".hca";
             sub["character"] = e.contains("character") ? e["character"] : ojson(-1);
             sub["text"] = text;
-            sub["duration"] = audio->contains("displayDuration") ? (*audio)["displayDuration"] : (*audio)["duration"];
+            sub["duration"] = e.contains("displayDuration") ? e["displayDuration"] : (*audio)["duration"];
             subtitles.push_back(std::move(sub));
         }
     }

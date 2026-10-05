@@ -13,8 +13,8 @@
 
 namespace fs = std::filesystem;
 
-static constexpr const char* kEntryKeys[] = { "character", "ja", "en", "text", "status" };
-static constexpr const char* kAudioKeys[] = { "text", "source", "duration", "displayDuration" };
+static constexpr const char* kEntryKeys[] = { "character", "ja", "en", "text", "displayDuration", "status" };
+static constexpr const char* kAudioKeys[] = { "text", "source", "duration" };
 static constexpr double kMergeSeconds = 1.5;
 
 double NowSeconds()
@@ -309,20 +309,17 @@ double Project::AudioDuration(const ojson& e, const char* lang)
     return d.is_number() ? d.get<double>() : 0.0;
 }
 
-std::optional<double> Project::DisplayDurationOverride(const ojson& e, const char* lang)
+std::optional<double> Project::DisplayDurationOverride(const ojson& e)
 {
-    auto it = e.find(lang);
-    if (it == e.end() || !it->is_object())
-        return std::nullopt;
-    auto d = it->find("displayDuration");
-    if (d == it->end() || !d->is_number())
+    auto d = e.find("displayDuration");
+    if (d == e.end() || !d->is_number())
         return std::nullopt;
     return d->get<double>();
 }
 
 double Project::EffectiveDuration(const ojson& e, const char* lang)
 {
-    if (auto o = DisplayDurationOverride(e, lang))
+    if (auto o = DisplayDurationOverride(e))
         return *o;
     return AudioDuration(e, lang);
 }
@@ -447,16 +444,14 @@ void Project::SetCharacter(size_t line, int character)
     Commit(line, std::move(e), {});
 }
 
-void Project::SetDisplayDuration(size_t line, const char* lang, std::optional<double> seconds)
+void Project::SetDisplayDuration(size_t line, std::optional<double> seconds)
 {
     ojson e = *lines[line].entry;
-    if (!e.contains(lang) || !e[lang].is_object())
-        return;
     if (seconds)
-        e[lang]["displayDuration"] = std::round(*seconds * 1000.0) / 1000.0;
+        e["displayDuration"] = std::round(*seconds * 1000.0) / 1000.0;
     else
-        e[lang].erase("displayDuration");
-    Commit(line, std::move(e), std::string("duration:") + lang + ":" + lines[line].id);
+        e.erase("displayDuration");
+    Commit(line, std::move(e), "duration:" + lines[line].id);
 }
 
 bool Project::Undo()

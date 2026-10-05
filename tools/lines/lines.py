@@ -7,9 +7,10 @@ voice id:
 
   "80101001": {
     "character": 1,
-    "ja": {"text": "...", "source": "whisper", "duration": 2.41, "displayDuration": 3.0},
+    "ja": {"text": "...", "source": "whisper", "duration": 2.41},
     "en": {"text": "...", "source": "script", "duration": 2.73},
     "text": "",
+    "displayDuration": 3.0,
     "status": "pending"
   }
 
@@ -22,17 +23,17 @@ of runaway repetitions ("NOOOO..." x1000 becomes "NOOO").
 
 text is the translation. The database is language agnostic: each translation team
 ships its own copy of data/lines. status is "pending", "translated" or "reviewed".
-displayDuration is an optional per-audio-language override of how long the subtitle
-stays on screen (set by the editor; build never touches it); duration is used when
-it is missing.
+displayDuration is an optional override of how long the translation stays on screen,
+used with every audio language (set by the editor; build never touches it); each
+audio's duration is used when it is missing.
 
 Commands:
   build             merge audio, Whisper transcripts and event script text into data/lines
   export-po         write a PO for translation (msgctxt = CATEGORY/id, msgstr = text)
   import-po         read translations back from a PO
   export-subtitles  write the subtitles.json loaded by the DLL (text, else en; one entry
-                    per language that has audio, each with its displayDuration or
-                    duration). Line breaks in text are kept (the translator placed
+                    per language that has audio, with the line's displayDuration or
+                    that audio's duration). Line breaks in text are kept (the translator placed
                     them); the English fallback is collapsed to one line because the
                     game's script wraps for its own, narrower text box.
 """
@@ -50,8 +51,8 @@ CATEGORIES = ("BATTLE", "EVENT")
 LANGUAGES = (("ja", "VOICE"), ("en", "VOICE_EN"))
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_DATA = REPO / "data" / "lines"
-ENTRY_KEYS = ("character", "ja", "en", "text", "status")
-AUDIO_KEYS = ("text", "source", "duration", "displayDuration")
+ENTRY_KEYS = ("character", "ja", "en", "text", "displayDuration", "status")
+AUDIO_KEYS = ("text", "source", "duration")
 STATUSES = ("pending", "translated", "reviewed")
 
 
@@ -348,7 +349,7 @@ def export_subtitles(args: argparse.Namespace) -> int:
                     "audioFile": f"/{folder}/{category}/{voice_id}.hca",
                     "character": entry.get("character", -1),
                     "text": text,
-                    "duration": audio.get("displayDuration", audio["duration"]),
+                    "duration": entry.get("displayDuration", audio["duration"]),
                 })
     output = Path(args.output)
     output.write_text(

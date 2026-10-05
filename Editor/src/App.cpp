@@ -1,5 +1,6 @@
 #include "App.hpp"
 #include "Exporter.hpp"
+#include "I18n.hpp"
 #include "Paths.hpp"
 #include "../../shared/SubtitleText.hpp"
 
@@ -16,6 +17,8 @@
 #include <filesystem>
 
 namespace fs = std::filesystem;
+using i18n::getStr;
+using namespace i18n::literals;
 
 // external/fonts/NotoSansJP-Regular.otf, embedded by CMake (cmake/embed_file.cmake)
 extern const unsigned char g_notoSansJp[];
@@ -28,7 +31,11 @@ namespace
         ImVec4(0.95f, 0.76f, 0.30f, 1.0f),  // translated
         ImVec4(0.42f, 0.84f, 0.46f, 1.0f),  // reviewed
     };
-    const char* kStatusNames[3] = { "Pendiente", "Traducida", "Revisada" };
+    std::string StatusName(int s)
+    {
+        static const char* const keys[3] = { "editor/status/pending", "editor/status/translated", "editor/status/reviewed" };
+        return getStr(keys[s]);
+    }
     const ImVec4 kWarnColor(1.0f, 0.62f, 0.25f, 1.0f);
 
     struct Resolution { int w, h; const char* label; };
@@ -76,13 +83,13 @@ namespace
         ImGui::Dummy(ImVec2(sz, ImGui::GetTextLineHeight()));
     }
 
-    void HelpMarker(const char* text)
+    void HelpMarker(const std::string& text)
     {
         ImGui::TextDisabled("(?)");
         if (ImGui::BeginItemTooltip())
         {
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 30.0f);
-            ImGui::TextUnformatted(text);
+            ImGui::TextUnformatted(text.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }
@@ -135,6 +142,7 @@ bool App::Init(SDL_Window* window, const char* glslVersion, const Options& optio
     m_window = window;
     m_options = options;
     m_settings.Load();
+    i18n::loadTranslations(m_settings.language);
     if (!options.dataDir.empty())
         m_settings.dataDir = options.dataDir;
     if (!options.gameDir.empty())
@@ -192,25 +200,25 @@ void App::LoadProject()
     m_filterDirty = true;
     if (m_settings.dataDir.empty())
     {
-        SetStatusMessage("Elige la carpeta de datos (data/) en Ajustes.", true);
+        SetStatusMessage("editor/msg/choose_data_dir"_i18n, true);
         return;
     }
     std::string error;
     if (!m_project.Load(m_settings.dataDir, error))
     {
-        SetStatusMessage("No se pudo cargar el proyecto: " + error, true);
+        SetStatusMessage(getStr("editor/msg/load_failed", error), true);
         return;
     }
     ++m_configRevision;
     m_filterCategory = -1;
     m_preview.LoadPortraits(m_settings.PortraitsDir(), m_project);
-    std::string message = "Cargadas " + std::to_string(m_project.lines.size()) + " líneas de " + m_settings.dataDir;
+    std::string message = getStr("editor/msg/loaded", m_project.lines.size(), m_settings.dataDir);
     if (!m_project.skippedFiles.empty())
     {
-        message += " (ignorados, no son de líneas:";
+        std::string files;
         for (const std::string& f : m_project.skippedFiles)
-            message += " " + f;
-        message += ")";
+            files += " " + f;
+        message += getStr("editor/msg/skipped_files", files);
     }
     SetStatusMessage(message);
 }
@@ -225,12 +233,7 @@ void App::ReloadGameAssets()
     if (!m_settings.gameDir.empty())
         m_bank.Open(GameDataDir(m_settings.gameDir), m_bankError);
     else
-        m_bankError = "carpeta del juego sin configurar";
-
-    std::string error;
-    if (m_settings.useBackgroundImage && !m_settings.backgroundImage.empty() &&
-        !m_preview.SetBackgroundImage(m_settings.backgroundImage, error))
-        SetStatusMessage(error, true);
+        m_bankError = "editor/msg/game_dir_not_set"_i18n;
     ++m_configRevision;
 }
 
@@ -245,42 +248,42 @@ bool App::Save()
     std::string error;
     if (!m_project.Save(error))
     {
-        SetStatusMessage("Error al guardar: " + error, true);
+        SetStatusMessage(getStr("editor/msg/save_failed", error), true);
         return false;
     }
     m_lastAutosave = NowSeconds();
-    SetStatusMessage("Guardado.");
+    SetStatusMessage("editor/msg/saved"_i18n);
     return true;
 }
 
-void App::Export(bool install)
+void App::Export(bool install, const std::string& path)
 {
     if (!m_project.IsLoaded())
         return;
     size_t count = 0;
     const std::string json = BuildSubtitlesJson(m_project, &count);
-    const std::string out = U8String(U8Path(m_project.DataDir()) / "subtitles.json");
+    const std::string out = path.empty() ? U8String(U8Path(m_project.DataDir()) / "subtitles.json") : path;
     if (!WriteFileAtomic(out, json))
     {
-        SetStatusMessage("No se pudo escribir " + out, true);
+        SetStatusMessage(getStr("editor/msg/write_failed", out), true);
         return;
     }
-    std::string msg = "Exportados " + std::to_string(count) + " subtítulos a " + out;
+    std::string msg = getStr("editor/msg/exported", count, out);
     if (install)
     {
         if (m_settings.gameDir.empty())
         {
-            SetStatusMessage(msg + ". Configura la carpeta del juego para instalarlos.", true);
+            SetStatusMessage(getStr("editor/msg/export_no_game_dir", msg), true);
             return;
         }
         const fs::path game = U8Path(m_settings.gameDir);
         if (!WriteFileAtomic(U8String(game / "subtitles.json"), json) ||
             !WriteFileAtomic(U8String(game / "dialoguebox.json"), DialogueBoxCore::SerializeConfig(m_project.boxConfig)))
         {
-            SetStatusMessage(msg + ". No se pudo copiar a la carpeta del juego.", true);
+            SetStatusMessage(getStr("editor/msg/install_failed", msg), true);
             return;
         }
-        msg += " e instalados en la carpeta del juego (subtitles.json + dialoguebox.json)";
+        msg = getStr("editor/msg/installed", msg);
     }
     SetStatusMessage(msg + ".");
 }
@@ -297,7 +300,7 @@ std::string App::CharacterLabel(int id) const
 {
     if (const Character* ch = m_project.FindCharacter(id))
         return ch->name.empty() ? "#" + std::to_string(id) : ch->name;
-    return id < 0 ? "(sin personaje)" : "#" + std::to_string(id);
+    return id < 0 ? "editor/common/no_character"_i18n : "#" + std::to_string(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -321,8 +324,8 @@ void App::OpenDialog(DialogTarget target)
         m_dialogTarget = target;
         m_dialogDone = false;
     }
-    static const SDL_DialogFileFilter images[] = { { "Imágenes", "png;jpg;jpeg;bmp" } };
     static const SDL_DialogFileFilter png[] = { { "PNG", "png" } };
+    static const SDL_DialogFileFilter jsonFiles[] = { { "JSON", "json" } };
     switch (target)
     {
     case DialogTarget::DataDir:
@@ -334,11 +337,12 @@ void App::OpenDialog(DialogTarget target)
     case DialogTarget::PortraitsDir:
         SDL_ShowOpenFolderDialog(DialogCallback, this, m_window, nullptr, false);
         break;
-    case DialogTarget::Background:
-        SDL_ShowOpenFileDialog(DialogCallback, this, m_window, images, 1, nullptr, false);
-        break;
     case DialogTarget::SavePng:
         SDL_ShowSaveFileDialog(DialogCallback, this, m_window, png, 1, "preview.png");
+        break;
+    case DialogTarget::ExportSubtitles:
+        m_dialogDefault = U8String(U8Path(m_project.DataDir()) / "subtitles.json");
+        SDL_ShowSaveFileDialog(DialogCallback, this, m_window, jsonFiles, 1, m_dialogDefault.c_str());
         break;
     default:
         break;
@@ -365,19 +369,11 @@ void App::PollDialogs()
     case DialogTarget::DataDir:      m_editDataDir = result; break;
     case DialogTarget::GameDir:      m_editGameDir = result; break;
     case DialogTarget::PortraitsDir: m_editPortraitsDir = result; break;
-    case DialogTarget::Background:
-    {
-        std::string error;
-        if (m_preview.SetBackgroundImage(result, error))
-        {
-            m_settings.backgroundImage = result;
-            m_settings.useBackgroundImage = true;
-            m_settings.Save();
-        }
-        else
-            SetStatusMessage(error, true);
+    case DialogTarget::ExportSubtitles:
+        if (fs::path(U8Path(result)).extension().empty())
+            result += ".json";
+        Export(false, result);
         break;
-    }
     case DialogTarget::SavePng:
     {
         if (fs::path(U8Path(result)).extension().empty())
@@ -385,7 +381,7 @@ void App::PollDialogs()
         std::string error;
         RenderPreview(1.0f);  // the exact in-game pixels
         if (m_preview.SavePng(result, error))
-            SetStatusMessage("Preview guardada en " + result);
+            SetStatusMessage(getStr("editor/msg/preview_saved", result));
         else
             SetStatusMessage(error, true);
         break;
@@ -464,7 +460,7 @@ void App::SelectNext(Status wanted)
             return;
         }
     }
-    SetStatusMessage(std::string("No quedan líneas '") + kStatusNames[int(wanted)] + "' en la lista filtrada.");
+    SetStatusMessage(getStr("editor/msg/no_more_lines", StatusName(int(wanted))));
 }
 
 void App::PlayAudio(size_t line, const AudioLang& lang)
@@ -482,12 +478,12 @@ void App::PlayAudio(size_t line, const AudioLang& lang)
     std::string error;
     if (!m_bank.IsOpen())
     {
-        SetStatusMessage("Audio no disponible: " + m_bankError, true);
+        SetStatusMessage(getStr("editor/msg/audio_unavailable", m_bankError), true);
         return;
     }
     if (!m_bank.Decode(cue, wave, error) || !m_player.Play(wave, m_settings.volume, error))
     {
-        SetStatusMessage("No se pudo reproducir " + cue + ": " + error, true);
+        SetStatusMessage(getStr("editor/msg/play_failed", cue, error), true);
         return;
     }
     m_player.SetTag(tag);
@@ -530,9 +526,9 @@ bool App::Frame()
         {
             std::string error;
             if (m_project.Save(error))
-                SetStatusMessage("Autoguardado.");
+                SetStatusMessage("editor/msg/autosaved"_i18n);
             else
-                SetStatusMessage("Error en el autoguardado: " + error, true);
+                SetStatusMessage(getStr("editor/msg/autosave_failed", error), true);
             m_lastAutosave = NowSeconds();
         }
     }
@@ -570,9 +566,8 @@ bool App::Frame()
     else
     {
         ImGui::Spacing();
-        ImGui::TextWrapped("No hay proyecto cargado. Abre Archivo > Ajustes y elige la carpeta data/ del repositorio "
-                           "(la que contiene lines/ con los .json de líneas, p. ej. lines/battle.json).");
-        if (ImGui::Button("Abrir ajustes"))
+        ImGui::TextWrapped("%s", "editor/no_project/text"_i18n.c_str());
+        if (ImGui::Button("editor/no_project/open_settings"_i18n.c_str()))
             m_settings.showSettings = true;
     }
 
@@ -650,58 +645,49 @@ void App::DrawMenuBar()
 {
     if (!ImGui::BeginMenuBar())
         return;
-    if (ImGui::BeginMenu("Archivo"))
+    if (ImGui::BeginMenu(("editor/menu/file"_i18n + "###file").c_str()))
     {
-        if (ImGui::MenuItem("Guardar", "Ctrl+S", false, m_project.IsLoaded()))
+        if (ImGui::MenuItem("editor/menu/save"_i18n.c_str(), "Ctrl+S", false, m_project.IsLoaded()))
             Save();
-        if (ImGui::MenuItem("Recargar desde disco", nullptr, false, m_project.IsLoaded()))
+        if (ImGui::MenuItem("editor/menu/reload"_i18n.c_str(), nullptr, false, m_project.IsLoaded()))
             LoadProject();
         ImGui::Separator();
-        if (ImGui::MenuItem("Exportar subtitles.json", nullptr, false, m_project.IsLoaded()))
-            Export(false);
-        if (ImGui::MenuItem("Exportar e instalar en el juego", nullptr, false, m_project.IsLoaded() && !m_settings.gameDir.empty()))
+        if (ImGui::MenuItem("editor/menu/export"_i18n.c_str(), nullptr, false, m_project.IsLoaded()))
+            OpenDialog(DialogTarget::ExportSubtitles);
+        if (ImGui::MenuItem("editor/menu/export_install"_i18n.c_str(), nullptr, false, m_project.IsLoaded() && !m_settings.gameDir.empty()))
             Export(true);
-        ImGui::SetItemTooltip("Escribe data/subtitles.json y copia subtitles.json y dialoguebox.json\njunto al ejecutable del juego.");
+        ImGui::SetItemTooltip("%s", "editor/menu/export_install_tip"_i18n.c_str());
         ImGui::Separator();
-        if (ImGui::MenuItem("Ajustes...", nullptr, m_settings.showSettings))
+        if (ImGui::MenuItem("editor/menu/settings"_i18n.c_str(), nullptr, m_settings.showSettings))
             m_settings.showSettings = !m_settings.showSettings;
         ImGui::Separator();
-        if (ImGui::MenuItem("Salir"))
+        if (ImGui::MenuItem("editor/menu/quit"_i18n.c_str()))
             m_quitRequested = true;
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Editar"))
+    if (ImGui::BeginMenu(("editor/menu/edit"_i18n + "###edit").c_str()))
     {
-        if (ImGui::MenuItem("Deshacer", "Ctrl+Z", false, m_project.CanUndo()))
+        if (ImGui::MenuItem("editor/menu/undo"_i18n.c_str(), "Ctrl+Z", false, m_project.CanUndo()))
             m_project.Undo();
-        if (ImGui::MenuItem("Rehacer", "Ctrl+Y", false, m_project.CanRedo()))
+        if (ImGui::MenuItem("editor/menu/redo"_i18n.c_str(), "Ctrl+Y", false, m_project.CanRedo()))
             m_project.Redo();
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Ver"))
+    if (ImGui::BeginMenu(("editor/menu/view"_i18n + "###view").c_str()))
     {
-        if (ImGui::MenuItem("Ajustes de la caja de diálogo", nullptr, m_settings.showBoxSettings))
+        if (ImGui::MenuItem("editor/menu/box_settings"_i18n.c_str(), nullptr, m_settings.showBoxSettings))
             m_settings.showBoxSettings = !m_settings.showBoxSettings;
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Ayuda"))
+    if (ImGui::BeginMenu(("editor/menu/help"_i18n + "###help").c_str()))
     {
-        ImGui::TextUnformatted(
-            "Atajos\n"
-            "  Ctrl+Enter          Marcar traducida y saltar a la siguiente pendiente\n"
-            "  Ctrl+Shift+Enter    Marcar revisada y saltar a la siguiente traducida\n"
-            "  Ctrl+Arriba/Abajo   Línea anterior / siguiente\n"
-            "  Ctrl+Espacio        Reproducir / detener la voz (EN, o JA si no hay)\n"
-            "  Ctrl+1 / Ctrl+2     Reproducir voz JA / EN\n"
-            "  Ctrl+S              Guardar\n"
-            "  Ctrl+Z / Ctrl+Y     Deshacer / rehacer (fuera del campo de texto)\n"
-            "  Enter               Salto de línea dentro de la traducción");
+        ImGui::TextUnformatted("editor/menu/shortcuts"_i18n.c_str());
         ImGui::EndMenu();
     }
     if (m_project.IsDirty() || m_project.boxConfigDirty)
     {
         ImGui::Spacing();
-        ImGui::TextColored(kWarnColor, "* sin guardar");
+        ImGui::TextColored(kWarnColor, "%s", "editor/menu/unsaved"_i18n.c_str());
     }
     ImGui::EndMenuBar();
 }
@@ -717,8 +703,8 @@ void App::DrawHeader()
             ImGui::TableNextColumn();
             const Analysis::Counts& c = m_analysis.counts[i];
             const float total = float(std::max(c.total, 1));
-            const char* name = i + 1 < columns ? m_project.categories[i].c_str() : "Total";
-            ImGui::Text("%s  %d líneas", name, c.total);
+            const std::string name = i + 1 < columns ? m_project.categories[i] : "editor/header/total"_i18n;
+            ImGui::TextUnformatted(getStr("editor/header/lines", name, c.total).c_str());
             // Stacked bar: reviewed, translated, pending
             const ImVec2 p = ImGui::GetCursorScreenPos();
             const float w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x;
@@ -735,17 +721,17 @@ void App::DrawHeader()
                 x += segW;
             }
             ImGui::Dummy(ImVec2(w, h));
-            ImGui::TextColored(kStatusColors[2], "%d rev.", c.reviewed);
+            ImGui::TextColored(kStatusColors[2], "%s", getStr("editor/header/reviewed", c.reviewed).c_str());
             ImGui::SameLine();
-            ImGui::TextColored(kStatusColors[1], "%d trad.", c.translated);
+            ImGui::TextColored(kStatusColors[1], "%s", getStr("editor/header/translated", c.translated).c_str());
             ImGui::SameLine();
-            ImGui::TextColored(kStatusColors[0], "%d pend.", c.pending);
+            ImGui::TextColored(kStatusColors[0], "%s", getStr("editor/header/pending", c.pending).c_str());
             ImGui::SameLine();
             ImGui::TextDisabled("(%.1f%%)", 100.0f * (c.reviewed + c.translated) / total);
             if (c.warnings)
             {
                 ImGui::SameLine();
-                ImGui::TextColored(kWarnColor, "%d avisos", c.warnings);
+                ImGui::TextColored(kWarnColor, "%s", getStr("editor/header/warnings", c.warnings).c_str());
             }
         }
         ImGui::EndTable();
@@ -764,16 +750,17 @@ void App::DrawList()
     ImGui::SetNextItemWidth(w * 0.40f);
     if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_F, ImGuiInputFlags_RouteGlobal))
         ImGui::SetKeyboardFocusHere();
-    if (ImGui::InputTextWithHint("##search", "Buscar (id, texto, personaje)  Ctrl+F", &m_search))
+    if (ImGui::InputTextWithHint("##search", "editor/list/search_hint"_i18n.c_str(), &m_search))
         m_filterDirty = true;
     ImGui::SameLine();
     ImGui::SetNextItemWidth(w * 0.17f);
-    const char* catPreview = m_filterCategory >= 0 && m_filterCategory < int(m_project.categories.size())
-                                 ? m_project.categories[m_filterCategory].c_str() : "Todas";
-    if (ImGui::BeginCombo("##cat", catPreview))
+    const std::string allCategories = "editor/list/all_categories"_i18n;
+    const std::string& catPreview = m_filterCategory >= 0 && m_filterCategory < int(m_project.categories.size())
+                                        ? m_project.categories[m_filterCategory] : allCategories;
+    if (ImGui::BeginCombo("##cat", catPreview.c_str()))
     {
         for (int c = -1; c < int(m_project.categories.size()); ++c)
-            if (ImGui::Selectable(c < 0 ? "Todas" : m_project.categories[c].c_str(), m_filterCategory == c))
+            if (ImGui::Selectable(c < 0 ? allCategories.c_str() : m_project.categories[c].c_str(), m_filterCategory == c))
             {
                 m_filterCategory = c;
                 m_filterDirty = true;
@@ -782,7 +769,8 @@ void App::DrawList()
     }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(w * 0.17f);
-    const char* statuses[] = { "Todos", "Pendiente", "Traducida", "Revisada" };
+    const std::string statusLabels[] = { "editor/list/all_statuses"_i18n, StatusName(0), StatusName(1), StatusName(2) };
+    const char* statuses[] = { statusLabels[0].c_str(), statusLabels[1].c_str(), statusLabels[2].c_str(), statusLabels[3].c_str() };
     int st = m_filterStatus + 1;
     if (ImGui::Combo("##status", &st, statuses, 4))
     {
@@ -791,15 +779,15 @@ void App::DrawList()
     }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(-FLT_MIN);
-    const std::string charPreview = m_filterCharacter == INT32_MIN ? std::string("Personaje: todos") : CharacterLabel(m_filterCharacter);
+    const std::string charPreview = m_filterCharacter == INT32_MIN ? "editor/list/character_all"_i18n : CharacterLabel(m_filterCharacter);
     if (ImGui::BeginCombo("##charfilter", charPreview.c_str(), ImGuiComboFlags_HeightLarge))
     {
-        if (ImGui::Selectable("Todos", m_filterCharacter == INT32_MIN))
+        if (ImGui::Selectable("editor/list/all_characters"_i18n.c_str(), m_filterCharacter == INT32_MIN))
         {
             m_filterCharacter = INT32_MIN;
             m_filterDirty = true;
         }
-        if (ImGui::Selectable("(sin personaje)", m_filterCharacter == -1))
+        if (ImGui::Selectable("editor/common/no_character"_i18n.c_str(), m_filterCharacter == -1))
         {
             m_filterCharacter = -1;
             m_filterDirty = true;
@@ -815,10 +803,10 @@ void App::DrawList()
         }
         ImGui::EndCombo();
     }
-    if (ImGui::Checkbox("Solo con avisos", &m_filterWarnings))
+    if (ImGui::Checkbox("editor/list/only_warnings"_i18n.c_str(), &m_filterWarnings))
         m_filterDirty = true;
     ImGui::SameLine();
-    ImGui::TextDisabled("%zu de %zu líneas", m_filtered.size(), m_project.lines.size());
+    ImGui::TextDisabled("%s", getStr("editor/list/count", m_filtered.size(), m_project.lines.size()).c_str());
 
     const ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter |
                                   ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Hideable;
@@ -827,10 +815,10 @@ void App::DrawList()
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("##st", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, ImGui::GetTextLineHeight() * 0.8f);
     ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("00000000").x);
-    ImGui::TableSetupColumn("Personaje", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Purple Heart").x);
-    ImGui::TableSetupColumn("Inglés", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-    ImGui::TableSetupColumn("Traducción", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-    ImGui::TableSetupColumn("Audio", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("JA EN").x);
+    ImGui::TableSetupColumn("editor/list/col_character"_i18n.c_str(), ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Purple Heart").x);
+    ImGui::TableSetupColumn("editor/list/col_english"_i18n.c_str(), ImGuiTableColumnFlags_WidthStretch, 1.0f);
+    ImGui::TableSetupColumn("editor/list/col_translation"_i18n.c_str(), ImGuiTableColumnFlags_WidthStretch, 1.0f);
+    ImGui::TableSetupColumn("editor/list/col_audio"_i18n.c_str(), ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("JA EN").x);
     ImGui::TableSetupColumn("!", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("!").x * 2);
     ImGui::TableHeadersRow();
 
@@ -877,7 +865,7 @@ void App::DrawList()
             }
             if (ImGui::BeginItemTooltip())
             {
-                ImGui::Text("%s/%s  -  %s", m_project.categories[line.category].c_str(), line.id.c_str(), kStatusNames[int(status)]);
+                ImGui::Text("%s/%s  -  %s", m_project.categories[line.category].c_str(), line.id.c_str(), StatusName(int(status)).c_str());
                 ImGui::EndTooltip();
             }
 
@@ -926,7 +914,7 @@ void App::DrawDetail()
     }
     if (m_selected == SIZE_MAX)
     {
-        ImGui::TextDisabled("Selecciona una línea.");
+        ImGui::TextDisabled("%s", "editor/detail/select_line"_i18n.c_str());
         ImGui::EndChild();
         return;
     }
@@ -945,7 +933,7 @@ void App::DrawDetail()
     {
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_CheckMark, kStatusColors[s]);
-        if (ImGui::RadioButton(kStatusNames[s], int(status) == s))
+        if (ImGui::RadioButton(StatusName(s).c_str(), int(status) == s))
             m_project.SetStatus(idx, Status(s));
         ImGui::PopStyleColor();
     }
@@ -960,17 +948,18 @@ void App::DrawDetail()
             continue;
         ImGui::PushID(lang.key);
         ImGui::AlignTextToFramePadding();
-        ImGui::TextColored(ImVec4(0.7f, 0.8f, 1.0f, 1.0f), "%s", std::string(lang.key) == "en" ? "Inglés" : "Japonés");
+        ImGui::TextColored(ImVec4(0.7f, 0.8f, 1.0f, 1.0f), "%s",
+                           (std::string(lang.key) == "en" ? "editor/detail/english"_i18n : "editor/detail/japanese"_i18n).c_str());
         if (hasAudio)
         {
             ImGui::SameLine();
             const bool playing = m_player.IsPlaying() && m_player.Tag() == line.id + lang.cueSuffix;
             ImGui::BeginDisabled(!m_bank.IsOpen() || !m_bank.Has(line.id + lang.cueSuffix));
-            if (ImGui::SmallButton(playing ? "Detener" : "Reproducir"))
+            if (ImGui::SmallButton((playing ? "editor/detail/stop"_i18n : "editor/detail/play"_i18n).c_str()))
                 PlayAudio(idx, lang);
             ImGui::EndDisabled();
             if (!m_bank.IsOpen())
-                ImGui::SetItemTooltip("Audio no disponible: %s", m_bankError.c_str());
+                ImGui::SetItemTooltip("%s", getStr("editor/msg/audio_unavailable", m_bankError).c_str());
             ImGui::SameLine();
             if (playing)
                 ImGui::ProgressBar(float(m_player.Position() / std::max(m_player.Length(), 0.001)),
@@ -998,13 +987,11 @@ void App::DrawDetail()
 
     // Translation
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("Traducción");
+    ImGui::TextUnformatted("editor/detail/translation"_i18n.c_str());
     ImGui::SameLine();
-    HelpMarker("Enter inserta un salto de línea, que se respeta en el juego.\n"
-               "Ctrl+Enter marca la línea como traducida y salta a la siguiente pendiente.\n"
-               "Si se deja vacía, el juego muestra el texto en inglés.");
+    HelpMarker("editor/detail/translation_help"_i18n);
     ImGui::SameLine();
-    if (ImGui::SmallButton("Copiar inglés"))
+    if (ImGui::SmallButton("editor/detail/copy_english"_i18n.c_str()))
     {
         ImGui::ClearActiveID();
         m_project.SetText(idx, SubtitleText::CollapseSpaces(Project::SourceText(e, "en")));
@@ -1022,7 +1009,7 @@ void App::DrawDetail()
 
     // Character
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("Personaje");
+    ImGui::TextUnformatted("editor/detail/character"_i18n.c_str());
     ImGui::SameLine();
     const int character = Project::GetCharacter(e);
     ImGui::SetNextItemWidth(ImGui::GetFontSize() * 16);
@@ -1035,7 +1022,7 @@ void App::DrawDetail()
             m_characterSearch.clear();
         }
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::InputTextWithHint("##chsearch", "Buscar", &m_characterSearch);
+        ImGui::InputTextWithHint("##chsearch", "editor/detail/search"_i18n.c_str(), &m_characterSearch);
         const std::string needle = Lower(m_characterSearch);
         const float thumbH = ImGui::GetTextLineHeight() * 1.6f;
         auto item = [&](int id, const std::string& name) {
@@ -1061,7 +1048,7 @@ void App::DrawDetail()
                 ImGui::TextUnformatted(name.c_str());
             ImGui::PopID();
         };
-        item(-1, "(sin personaje)");
+        item(-1, "editor/common/no_character"_i18n);
         for (const auto& [id, ch] : m_project.characters)
             item(id, ch.name);
         ImGui::EndCombo();
@@ -1069,41 +1056,58 @@ void App::DrawDetail()
     if (!m_preview.HasPortrait(character))
     {
         ImGui::SameLine();
-        ImGui::TextDisabled("sin retrato: el juego solo muestra el texto");
+        ImGui::TextDisabled("%s", "editor/detail/no_portrait"_i18n.c_str());
     }
 
     // Durations
     ImGui::AlignTextToFramePadding();
-    ImGui::TextUnformatted("Duración en pantalla");
+    ImGui::TextUnformatted("editor/detail/duration"_i18n.c_str());
     ImGui::SameLine();
-    HelpMarker("Cuánto tiempo se ve el subtítulo con cada audio. Por defecto es la duración de la voz.");
-    if (ImGui::BeginTable("##durations", 4, ImGuiTableFlags_SizingFixedFit))
+    HelpMarker("editor/detail/duration_help"_i18n);
+    if (ImGui::BeginTable("##durations", 3, ImGuiTableFlags_SizingFixedFit))
     {
+        // Voices: read only, for reference.
+        double longest = 0;
         for (const AudioLang& lang : kAudioLangs)
         {
             if (!Project::HasAudio(e, lang.key))
                 continue;
-            ImGui::PushID(lang.key);
             const double audio = Project::AudioDuration(e, lang.key);
-            const auto over = Project::DisplayDurationOverride(e, lang.key);
-            float value = float(over ? *over : audio);
+            longest = std::max(longest, audio);
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("   Voz %s (%.3f s)", lang.label, audio);
+            ImGui::TextDisabled("%s", getStr("editor/detail/voice", lang.label).c_str());
             ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
-            if (ImGui::DragFloat("##dur", &value, 0.01f, 0.3f, 60.0f, "%.3f s", ImGuiSliderFlags_AlwaysClamp))
-                m_project.SetDisplayDuration(idx, lang.key, double(value));
-            ImGui::TableNextColumn();
-            ImGui::BeginDisabled(!over);
-            if (ImGui::SmallButton("Restablecer"))
-                m_project.SetDisplayDuration(idx, lang.key, std::nullopt);
-            ImGui::EndDisabled();
-            ImGui::TableNextColumn();
-            if (over)
-                ImGui::TextDisabled("%+.2f s respecto a la voz", *over - audio);
-            ImGui::PopID();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("%.3f s", audio);
+        }
+
+        // Translation: optional override, used with every voice.
+        const auto over = Project::DisplayDurationOverride(e);
+        float value = float(over ? *over : longest);
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("editor/detail/translation_duration"_i18n.c_str());
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(ImGui::GetFontSize() * 7);
+        if (!over)
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.6f);
+        if (ImGui::DragFloat("##dur", &value, 0.01f, 0.3f, 60.0f, "%.3f s", ImGuiSliderFlags_AlwaysClamp))
+            m_project.SetDisplayDuration(idx, double(value));
+        if (!over)
+            ImGui::PopStyleVar();
+        ImGui::TableNextColumn();
+        if (over)
+        {
+            if (ImGui::SmallButton("editor/common/reset"_i18n.c_str()))
+                m_project.SetDisplayDuration(idx, std::nullopt);
+        }
+        else
+        {
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled("%s", "editor/detail/duration_default"_i18n.c_str());
         }
         ImGui::EndTable();
     }
@@ -1132,7 +1136,7 @@ void App::DrawDetail()
         }
         std::sort(suggestions.begin(), suggestions.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
         ImGui::Separator();
-        ImGui::Text("Memoria de traducción: %zu líneas con el mismo texto en inglés", same.size() - 1);
+        ImGui::TextUnformatted(getStr("editor/detail/memory", same.size() - 1).c_str());
         const std::string current = Project::Text(e);
         int shown = 0;
         for (const auto& [text, n] : suggestions)
@@ -1140,7 +1144,7 @@ void App::DrawDetail()
             if (text == current || shown++ >= 5)
                 continue;
             ImGui::PushID(shown);
-            if (ImGui::SmallButton("Usar"))
+            if (ImGui::SmallButton("editor/detail/use"_i18n.c_str()))
             {
                 ImGui::ClearActiveID();
                 m_project.SetText(idx, text);
@@ -1151,12 +1155,11 @@ void App::DrawDetail()
         }
         if (!SubtitleText::CollapseSpaces(current).empty() && !untranslated.empty())
         {
-            const std::string label = "Aplicar esta traducción a las " + std::to_string(untranslated.size()) +
-                                      " líneas idénticas sin traducir";
+            const std::string label = getStr("editor/detail/apply_to_identical", untranslated.size());
             if (ImGui::Button(label.c_str()))
             {
                 m_project.SetTextMany(untranslated, current);
-                SetStatusMessage("Traducción aplicada a " + std::to_string(untranslated.size()) + " líneas (Ctrl+Z para deshacer).");
+                SetStatusMessage(getStr("editor/msg/translation_applied", untranslated.size()));
             }
         }
     }
@@ -1166,18 +1169,17 @@ void App::DrawDetail()
     if (w.Any())
     {
         ImGui::Separator();
-        ImGui::TextColored(kWarnColor, "Avisos");
+        ImGui::TextColored(kWarnColor, "%s", "editor/detail/warnings"_i18n.c_str());
         if (!w.unsupported.empty())
-            ImGui::BulletText("La fuente del juego no tiene estos caracteres: %s", w.unsupported.c_str());
+            ImGui::BulletText("%s", getStr("editor/detail/warn_glyphs", w.unsupported).c_str());
         if (w.overflow)
-            ImGui::BulletText("Demasiado texto: no cabe en %d líneas ni con la fuente al mínimo.", m_project.boxConfig.maxLines);
+            ImGui::BulletText("%s", getStr("editor/detail/warn_overflow", m_project.boxConfig.maxLines).c_str());
         else if (w.shrunk)
-            ImGui::BulletText("La fuente se reduce para que quepa.");
+            ImGui::BulletText("%s", "editor/detail/warn_shrunk"_i18n.c_str());
         else if (w.widened)
-            ImGui::BulletText("La caja se ensancha a toda la pantalla para que quepa.");
+            ImGui::BulletText("%s", "editor/detail/warn_widened"_i18n.c_str());
         if (w.tooFast)
-            ImGui::BulletText("%.1f caracteres por segundo (máximo %.0f): alarga la duración o acorta el texto.",
-                              w.charsPerSecond, m_settings.maxCharsPerSecond);
+            ImGui::BulletText("%s", getStr("editor/detail/warn_fast", w.charsPerSecond, m_settings.maxCharsPerSecond).c_str());
     }
 
     ImGui::PopID();
@@ -1199,7 +1201,7 @@ void App::RenderPreview(float rasterScale)
         character = Project::GetCharacter(e);
     }
     m_preview.Render(m_project.boxConfig, text, character, m_settings.previewWidth, m_settings.previewHeight,
-                     m_settings.backgroundColor, m_settings.useBackgroundImage, rasterScale);
+                     m_settings.backgroundColor, rasterScale);
 }
 
 void App::DrawPreview()
@@ -1223,11 +1225,11 @@ void App::DrawPreview()
                 customRes = false;
                 ApplySettingsChange();
             }
-        if (ImGui::Selectable("Personalizada...", customRes))
+        if (ImGui::Selectable("editor/preview/custom_res"_i18n.c_str(), customRes))
             customRes = true;
         ImGui::EndCombo();
     }
-    ImGui::SetItemTooltip("Resolución del juego. La posición de la caja está en píxeles absolutos.");
+    ImGui::SetItemTooltip("%s", "editor/preview/res_tip"_i18n.c_str());
     if (customRes)
     {
         ImGui::SameLine();
@@ -1243,7 +1245,9 @@ void App::DrawPreview()
 
     ImGui::SameLine();
     const float zooms[] = { -1.0f, 0.0f, 0.25f, 0.5f, 1.0f, 2.0f };
-    const char* zoomNames[] = { "Caja", "Pantalla completa", "25%", "50%", "100% (exacto)", "200%" };
+    const std::string zoomBox = "editor/preview/zoom_box"_i18n, zoomFull = "editor/preview/zoom_full"_i18n,
+                      zoomExact = "editor/preview/zoom_exact"_i18n;
+    const char* zoomNames[] = { zoomBox.c_str(), zoomFull.c_str(), "25%", "50%", zoomExact.c_str(), "200%" };
     int zoomIndex = 0;
     for (int i = 0; i < 6; ++i)
         if (std::abs(zooms[i] - m_settings.previewScale) < 0.001f)
@@ -1254,38 +1258,22 @@ void App::DrawPreview()
         m_settings.previewScale = zooms[zoomIndex];
         m_settings.Save();
     }
-    ImGui::SetItemTooltip("Caja: amplía la caja para que se lea bien.\n100%%: un píxel del juego = un píxel de pantalla (exacto).");
+    ImGui::SetItemTooltip("%s", "editor/preview/zoom_tip"_i18n.c_str());
 
-    ImGui::SameLine();
-    bool useImage = m_settings.useBackgroundImage && m_preview.HasBackgroundImage();
-    if (ImGui::Checkbox("Captura", &useImage))
-    {
-        if (useImage && !m_preview.HasBackgroundImage())
-            OpenDialog(DialogTarget::Background);
-        else
-        {
-            m_settings.useBackgroundImage = useImage;
-            m_settings.Save();
-        }
-    }
-    ImGui::SetItemTooltip("Usar una captura del juego como fondo.");
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Elegir..."))
-        OpenDialog(DialogTarget::Background);
     ImGui::SameLine();
     if (ImGui::ColorEdit3("##bg", m_settings.backgroundColor, ImGuiColorEditFlags_NoInputs))
         m_settings.Save();
-    ImGui::SetItemTooltip("Color de fondo");
+    ImGui::SetItemTooltip("%s", "editor/preview/bg_color"_i18n.c_str());
     ImGui::SameLine();
-    if (ImGui::SmallButton("Guardar PNG"))
+    if (ImGui::SmallButton("editor/preview/save_png"_i18n.c_str()))
         OpenDialog(DialogTarget::SavePng);
     ImGui::SameLine();
-    if (ImGui::SmallButton("Caja..."))
+    if (ImGui::SmallButton("editor/preview/box"_i18n.c_str()))
         m_settings.showBoxSettings = !m_settings.showBoxSettings;
 
     if (!m_preview.FontLoaded())
-        ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f),
-                           "No se encuentra %s en la carpeta del juego: la preview NO es exacta.", DialogueBoxCore::kFontFile);
+        ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "%s",
+                           getStr("editor/preview/font_missing", DialogueBoxCore::kFontFile).c_str());
 
     // Selected line
     std::string text;
@@ -1295,8 +1283,9 @@ void App::DrawPreview()
         const ojson& e = *m_project.lines[m_selected].entry;
         text = Project::DisplayText(e);
         const DialogueBoxCore::Layout& l = layout = m_preview.Measure(m_project.boxConfig, text, m_settings.previewWidth, m_settings.previewHeight);
-        ImGui::TextDisabled("%d línea(s), fuente %.0f px%s%s", l.lines, l.fontSize, l.widened ? ", caja ensanchada" : "",
-                            SubtitleText::CollapseSpaces(Project::Text(e)).empty() ? "  -  sin traducir: se muestra el inglés" : "");
+        ImGui::TextDisabled("%s", getStr("editor/preview/layout", l.lines, l.fontSize,
+                                         l.widened ? "editor/preview/widened"_i18n : std::string(),
+                                         SubtitleText::CollapseSpaces(Project::Text(e)).empty() ? "editor/preview/untranslated"_i18n : std::string()).c_str());
     }
     // Show it. 100% = one game pixel per physical screen pixel.
     if (ImGui::BeginChild("##previewimg", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar))
@@ -1305,7 +1294,7 @@ void App::DrawPreview()
         const float fbScale = ImGui::GetIO().DisplayFramebufferScale.x > 0 ? ImGui::GetIO().DisplayFramebufferScale.x : 1.0f;
         const float pw = float(m_settings.previewWidth), ph = float(m_settings.previewHeight);
 
-        // Part of the frame to show (game pixels): the box plus a margin in "Caja" mode,
+        // Part of the frame to show (game pixels): the box plus a margin in box mode,
         // else the whole frame.
         ImVec2 c0(0, 0), c1(pw, ph);
         const bool boxMode = m_settings.previewScale < 0 && !text.empty();
@@ -1361,7 +1350,7 @@ void App::DrawBoxSettings()
     if (!m_settings.showBoxSettings || !m_project.IsLoaded())
         return;
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 26, ImGui::GetFontSize() * 40), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Caja de diálogo (dialoguebox.json)", &m_settings.showBoxSettings))
+    if (!ImGui::Begin(("editor/box/title"_i18n + "###boxsettings").c_str(), &m_settings.showBoxSettings))
     {
         ImGui::End();
         return;
@@ -1370,34 +1359,34 @@ void App::DrawBoxSettings()
     const DialogueBoxCore::Config before = c;
     const float dw = float(m_settings.previewWidth), dh = float(m_settings.previewHeight);
 
-    ImGui::TextWrapped("Afecta a todos los idiomas. Se guarda en %s y se instala junto al juego al exportar.",
-                       m_project.BoxConfigPath().c_str());
-    ImGui::SeparatorText("Posición (px, -1 = automática)");
+    auto label = [](const char* key, const char* id) { return getStr(key) + "###" + id; };
+    ImGui::TextWrapped("%s", getStr("editor/box/info", m_project.BoxConfigPath()).c_str());
+    ImGui::SeparatorText("editor/box/position"_i18n.c_str());
     ImGui::DragFloat("X", &c.x, 1.0f, -1.0f, dw);
     ImGui::DragFloat("Y", &c.y, 1.0f, -1.0f, dh);
-    ImGui::DragFloat("Ancho", &c.width, 1.0f, -1.0f, dw);
-    ImGui::SeparatorText("Retrato");
-    ImGui::DragFloat("Alto del retrato", &c.portraitHeight, 1.0f, 32.0f, 512.0f);
-    ImGui::DragFloat("Proporción", &c.portraitAspect, 0.01f, 0.5f, 4.0f);
-    ImGui::SeparatorText("Márgenes");
-    ImGui::DragFloat("Izquierda", &c.paddingLeft, 0.5f, 0.0f, 128.0f);
-    ImGui::DragFloat("Derecha", &c.paddingRight, 0.5f, 0.0f, 128.0f);
-    ImGui::DragFloat("Arriba", &c.paddingTop, 0.5f, 0.0f, 128.0f);
-    ImGui::DragFloat("Abajo", &c.paddingBottom, 0.5f, 0.0f, 128.0f);
-    ImGui::DragFloat("Retrato <-> texto", &c.paddingInner, 0.5f, 0.0f, 128.0f);
-    ImGui::SeparatorText("Texto");
-    ImGui::DragFloat("Tamaño de fuente", &c.fontSize, 0.5f, 8.0f, 96.0f);
-    ImGui::SliderInt("Líneas máximas", &c.maxLines, 1, 6);
-    ImGui::SliderFloat("Escala mínima", &c.minFontScale, 0.5f, 1.0f);
-    ImGui::DragFloat("Desplazamiento X", &c.textXOffset, 0.5f, -128.0f, 128.0f);
-    ImGui::DragFloat("Desplazamiento Y", &c.textYOffset, 0.5f, -128.0f, 128.0f);
-    ImGui::SeparatorText("Aspecto");
-    ImGui::SliderFloat("Opacidad", &c.opacity, 0.0f, 1.0f);
-    ImGui::DragFloat("Redondeo", &c.rounding, 0.5f, 0.0f, 32.0f);
-    ImGui::DragFloat("Grosor del borde", &c.borderThickness, 0.1f, 0.0f, 10.0f);
-    ImGui::ColorEdit4("Fondo", c.bgColor);
-    ImGui::ColorEdit4("Borde", c.borderColor);
-    ImGui::ColorEdit4("Texto", c.textColor);
+    ImGui::DragFloat(label("editor/box/width", "width").c_str(), &c.width, 1.0f, -1.0f, dw);
+    ImGui::SeparatorText("editor/box/portrait"_i18n.c_str());
+    ImGui::DragFloat(label("editor/box/portrait_height", "portraitHeight").c_str(), &c.portraitHeight, 1.0f, 32.0f, 512.0f);
+    ImGui::DragFloat(label("editor/box/aspect", "portraitAspect").c_str(), &c.portraitAspect, 0.01f, 0.5f, 4.0f);
+    ImGui::SeparatorText("editor/box/margins"_i18n.c_str());
+    ImGui::DragFloat(label("editor/box/left", "paddingLeft").c_str(), &c.paddingLeft, 0.5f, 0.0f, 128.0f);
+    ImGui::DragFloat(label("editor/box/right", "paddingRight").c_str(), &c.paddingRight, 0.5f, 0.0f, 128.0f);
+    ImGui::DragFloat(label("editor/box/top", "paddingTop").c_str(), &c.paddingTop, 0.5f, 0.0f, 128.0f);
+    ImGui::DragFloat(label("editor/box/bottom", "paddingBottom").c_str(), &c.paddingBottom, 0.5f, 0.0f, 128.0f);
+    ImGui::DragFloat(label("editor/box/inner", "paddingInner").c_str(), &c.paddingInner, 0.5f, 0.0f, 128.0f);
+    ImGui::SeparatorText("editor/box/text"_i18n.c_str());
+    ImGui::DragFloat(label("editor/box/font_size", "fontSize").c_str(), &c.fontSize, 0.5f, 8.0f, 96.0f);
+    ImGui::SliderInt(label("editor/box/max_lines", "maxLines").c_str(), &c.maxLines, 1, 6);
+    ImGui::SliderFloat(label("editor/box/min_scale", "minFontScale").c_str(), &c.minFontScale, 0.5f, 1.0f);
+    ImGui::DragFloat(label("editor/box/offset_x", "textXOffset").c_str(), &c.textXOffset, 0.5f, -128.0f, 128.0f);
+    ImGui::DragFloat(label("editor/box/offset_y", "textYOffset").c_str(), &c.textYOffset, 0.5f, -128.0f, 128.0f);
+    ImGui::SeparatorText("editor/box/look"_i18n.c_str());
+    ImGui::SliderFloat(label("editor/box/opacity", "opacity").c_str(), &c.opacity, 0.0f, 1.0f);
+    ImGui::DragFloat(label("editor/box/rounding", "rounding").c_str(), &c.rounding, 0.5f, 0.0f, 32.0f);
+    ImGui::DragFloat(label("editor/box/border_thickness", "borderThickness").c_str(), &c.borderThickness, 0.1f, 0.0f, 10.0f);
+    ImGui::ColorEdit4(label("editor/box/background", "bgColor").c_str(), c.bgColor);
+    ImGui::ColorEdit4(label("editor/box/border", "borderColor").c_str(), c.borderColor);
+    ImGui::ColorEdit4(label("editor/box/text_color", "textColor").c_str(), c.textColor);
 
     if (std::memcmp(&before, &c, sizeof c) != 0)
     {
@@ -1406,16 +1395,16 @@ void App::DrawBoxSettings()
     }
 
     ImGui::Separator();
-    if (ImGui::Button("Guardar"))
+    if (ImGui::Button("editor/common/save"_i18n.c_str()))
     {
         std::string error;
         if (m_project.SaveBoxConfig(error))
-            SetStatusMessage("dialoguebox.json guardado.");
+            SetStatusMessage("editor/msg/box_saved"_i18n);
         else
             SetStatusMessage(error, true);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Valores por defecto"))
+    if (ImGui::Button("editor/box/defaults"_i18n.c_str()))
     {
         c = DialogueBoxCore::DefaultGameConfig();
         m_project.boxConfigDirty = true;
@@ -1429,35 +1418,34 @@ void App::DrawSettings()
     if (!m_settings.showSettings)
         return;
     ImGui::SetNextWindowSize(ImVec2(ImGui::GetFontSize() * 40, 0), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Ajustes", &m_settings.showSettings))
+    if (!ImGui::Begin(("editor/settings/title"_i18n + "###settings").c_str(), &m_settings.showSettings))
     {
         ImGui::End();
         return;
     }
-    auto pathField = [&](const char* label, const char* help, std::string& value, DialogTarget target) {
-        ImGui::PushID(label);
-        ImGui::TextUnformatted(label);
+    auto pathField = [&](const std::string& label, const std::string& help, std::string& value, DialogTarget target) {
+        ImGui::PushID(int(target));
+        ImGui::TextUnformatted(label.c_str());
         ImGui::SameLine();
         HelpMarker(help);
         ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 6);
         ImGui::InputText("##path", &value);
         ImGui::SameLine();
-        if (ImGui::Button("Examinar..."))
+        if (ImGui::Button("editor/common/browse"_i18n.c_str()))
             OpenDialog(target);
         ImGui::PopID();
     };
 
-    pathField("Carpeta de datos", "La carpeta data/ con lines/*.json (cada archivo válido es una categoría), characters.json y dialoguebox.json.\n"
-              "Cada equipo de traducción tiene su propia copia.", m_editDataDir, DialogTarget::DataDir);
-    pathField("Carpeta del juego", "Donde está instalado el juego. Se usa para la fuente FOT-NewRodinPro-EB.otf, "
-              "las voces (data/SOUND.xsb y data/SOUND.xwb) y para instalar los subtítulos.", m_editGameDir, DialogTarget::GameDir);
-    pathField("Carpeta de retratos", "PNG de los retratos (<id>.png). Vacío = Dll1/faces del repositorio.",
+    pathField("editor/settings/data_dir"_i18n, "editor/settings/data_dir_help"_i18n, m_editDataDir, DialogTarget::DataDir);
+    pathField("editor/settings/game_dir"_i18n, getStr("editor/settings/game_dir_help", DialogueBoxCore::kFontFile),
+              m_editGameDir, DialogTarget::GameDir);
+    pathField("editor/settings/portraits_dir"_i18n, "editor/settings/portraits_dir_help"_i18n,
               m_editPortraitsDir, DialogTarget::PortraitsDir);
 
     const bool changed = m_editDataDir != m_settings.dataDir || m_editGameDir != m_settings.gameDir ||
                          m_editPortraitsDir != m_settings.portraitsDir;
     ImGui::BeginDisabled(!changed);
-    if (ImGui::Button("Aplicar rutas"))
+    if (ImGui::Button("editor/settings/apply_paths"_i18n.c_str()))
     {
         if (m_project.IsDirty() && m_editDataDir != m_settings.dataDir)
             Save();
@@ -1476,35 +1464,63 @@ void App::DrawSettings()
     }
     ImGui::EndDisabled();
 
-    ImGui::SeparatorText("Estado");
-    ImGui::BulletText("Líneas: %zu", m_project.lines.size());
-    ImGui::BulletText("Fuente del juego: %s", m_preview.FontLoaded() ? "cargada (preview exacta)" : "NO encontrada");
+    ImGui::SeparatorText("editor/settings/state"_i18n.c_str());
+    ImGui::BulletText("%s", getStr("editor/settings/lines", m_project.lines.size()).c_str());
+    ImGui::BulletText("%s", getStr("editor/settings/game_font", m_preview.FontLoaded() ? "editor/settings/font_loaded"_i18n
+                                                                                       : "editor/settings/font_not_found"_i18n).c_str());
     if (m_bank.IsOpen())
-        ImGui::BulletText("Voces: %zu cues en SOUND.xsb", m_bank.CueCount());
+        ImGui::BulletText("%s", getStr("editor/settings/voices", m_bank.CueCount()).c_str());
     else
-        ImGui::BulletText("Voces: no disponibles (%s)", m_bankError.c_str());
-    ImGui::BulletText("Retratos: %zu", m_preview.PortraitCount());
+        ImGui::BulletText("%s", getStr("editor/settings/voices_unavailable", m_bankError).c_str());
+    ImGui::BulletText("%s", getStr("editor/settings/portraits", m_preview.PortraitCount()).c_str());
 
-    ImGui::SeparatorText("Edición");
-    if (ImGui::SliderInt("Autoguardado (s)", &m_settings.autosaveSeconds, 0, 600, m_settings.autosaveSeconds ? "%d s" : "desactivado"))
+    auto label = [](const char* key, const char* id) { return getStr(key) + "###" + id; };
+    ImGui::SeparatorText("editor/settings/editing"_i18n.c_str());
+    const std::string autosaveOff = "editor/settings/autosave_off"_i18n;
+    if (ImGui::SliderInt(label("editor/settings/autosave", "autosave").c_str(), &m_settings.autosaveSeconds, 0, 600,
+                         m_settings.autosaveSeconds ? "%d s" : autosaveOff.c_str()))
         m_settings.Save();
-    if (ImGui::SliderFloat("Máx. caracteres/segundo", &m_settings.maxCharsPerSecond, 0.0f, 40.0f, "%.0f"))
+    if (ImGui::SliderFloat(label("editor/settings/max_cps", "maxcps").c_str(), &m_settings.maxCharsPerSecond, 0.0f, 40.0f, "%.0f"))
         ApplySettingsChange();
     ImGui::SameLine();
-    HelpMarker("Avisa cuando el texto se lee demasiado rápido para su duración (0 = sin aviso).");
-    if (ImGui::SliderFloat("Volumen", &m_settings.volume, 0.0f, 1.0f, "%.2f"))
+    HelpMarker("editor/settings/max_cps_help"_i18n);
+    if (ImGui::SliderFloat(label("editor/settings/volume", "volume").c_str(), &m_settings.volume, 0.0f, 1.0f, "%.2f"))
     {
         m_player.SetVolume(m_settings.volume);
         m_settings.Save();
     }
 
-    ImGui::SeparatorText("Interfaz (requiere reiniciar)");
+    ImGui::SeparatorText("editor/settings/interface"_i18n.c_str());
+    const std::string autoLabel = getStr("editor/settings/language_auto", i18n::getLocaleName(i18n::getLocale()));
+    const std::string languagePreview = m_settings.language == i18n::LOCALE_AUTO ? autoLabel : i18n::getLocaleName(m_settings.language);
     ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 10);
-    if (ImGui::InputTextWithHint("Fuente de la interfaz", "por defecto", &m_settings.uiFontPath))
+    if (ImGui::BeginCombo(label("editor/settings/language", "language").c_str(), languagePreview.c_str()))
+    {
+        std::vector<std::string> options = { i18n::LOCALE_AUTO };
+        for (const std::string& locale : i18n::getAvailableLocales())
+            options.push_back(locale);
+        for (const std::string& option : options)
+        {
+            const std::string name = option == i18n::LOCALE_AUTO ? autoLabel : i18n::getLocaleName(option);
+            if (ImGui::Selectable((name + "##" + option).c_str(), m_settings.language == option))
+            {
+                m_settings.language = option;
+                i18n::loadTranslations(m_settings.language);
+                if (!m_bank.IsOpen() && m_settings.gameDir.empty())
+                    m_bankError = "editor/msg/game_dir_not_set"_i18n;
+                m_settings.Save();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetNextItemWidth(-ImGui::GetFontSize() * 10);
+    if (ImGui::InputTextWithHint(label("editor/settings/ui_font", "uifont").c_str(), "editor/settings/ui_font_default"_i18n.c_str(),
+                                 &m_settings.uiFontPath))
         m_settings.Save();
-    if (ImGui::SliderFloat("Tamaño", &m_settings.uiFontSize, 10.0f, 32.0f, "%.0f"))
+    if (ImGui::SliderFloat(label("editor/settings/ui_font_size", "uifontsize").c_str(), &m_settings.uiFontSize, 10.0f, 32.0f, "%.0f"))
         m_settings.Save();
-    ImGui::TextDisabled("Ajustes guardados en %s", Settings::FilePath().c_str());
+    ImGui::TextDisabled("%s", "editor/settings/restart_note"_i18n.c_str());
+    ImGui::TextDisabled("%s", getStr("editor/settings/saved_in", Settings::FilePath()).c_str());
     ImGui::End();
 }
 
@@ -1514,28 +1530,28 @@ void App::DrawQuitModal()
     {
         m_quitRequested = false;
         if (m_project.IsDirty() || m_project.boxConfigDirty)
-            ImGui::OpenPopup("Cambios sin guardar");
+            ImGui::OpenPopup("###unsaved");
         else
             m_quit = true;
     }
     ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-    if (ImGui::BeginPopupModal("Cambios sin guardar", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal(("editor/quit/title"_i18n + "###unsaved").c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::TextUnformatted("Hay cambios sin guardar. ¿Guardar antes de salir?");
-        if (ImGui::Button("Guardar y salir"))
+        ImGui::TextUnformatted("editor/quit/text"_i18n.c_str());
+        if (ImGui::Button("editor/quit/save_and_quit"_i18n.c_str()))
         {
             if (Save())
                 m_quit = true;
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Salir sin guardar"))
+        if (ImGui::Button("editor/quit/quit_without_saving"_i18n.c_str()))
         {
             m_quit = true;
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancelar"))
+        if (ImGui::Button("editor/common/cancel"_i18n.c_str()))
             ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }

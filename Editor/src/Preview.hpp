@@ -30,15 +30,11 @@ public:
     gl::GLuint PortraitTexture(int character) const;
     size_t PortraitCount() const { return m_portraitFiles.size(); }
 
-    bool SetBackgroundImage(const std::string& path, std::string& error);
-    void ClearBackgroundImage();
-    bool HasBackgroundImage() const { return m_bgTexture != 0; }
-
     // width x height = game resolution. rasterScale = screen pixels per game pixel:
     // 1 renders exactly the in-game pixels; other values render the same layout
     // sharp at the size it is displayed.
     void Render(const DialogueBoxCore::Config& cfg, const std::string& text, int character,
-                int width, int height, const float bgColor[3], bool useBgImage, float rasterScale = 1.0f);
+                int width, int height, const float bgColor[3], float rasterScale = 1.0f);
     gl::GLuint Texture() const { return m_fboTexture; }
     int Width() const { return m_gameWidth; }       // game resolution of the last render
     int Height() const { return m_gameHeight; }
@@ -75,7 +71,6 @@ private:
     int        m_gameHeight = 0;
     float      m_rasterScale = 1.0f;
 
-    gl::GLuint m_bgTexture = 0;
     std::map<int, gl::GLuint> m_portraitFiles;   // file id -> texture
     std::map<int, int>        m_characterToFile; // character id -> file id
 };
