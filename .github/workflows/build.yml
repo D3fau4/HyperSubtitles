@@ -66,3 +66,37 @@ jobs:
           name: hypersubtitles-editor-windows
           path: Editor/build/Release/HyperSubtitlesEditor.exe
           if-no-files-found: error
+
+  package:
+    needs: [build, editor]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download winmm.dll
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersubtitles-winmm
+          path: artifacts/winmm
+
+      - name: Download editor
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersubtitles-editor-windows
+          path: artifacts/editor
+
+      - name: Build release package
+        run: |
+          python3 tools/package/package.py \
+            --dll "$(find artifacts/winmm -name winmm.dll | head -n 1)" \
+            --editor artifacts/editor/HyperSubtitlesEditor.exe \
+            --out dist --version "${GITHUB_SHA::7}"
+          echo "PACKAGE=HyperSubtitles-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE }}
+          path: dist/${{ env.PACKAGE }}
+          if-no-files-found: error

@@ -22,10 +22,12 @@ namespace fs = std::filesystem;
 static int g_failures = 0;
 #define CHECK(cond) do { if (!(cond)) { std::printf("FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); ++g_failures; } } while (0)
 
+// File contents with LF line endings: Windows checkouts (core.autocrlf) may have CRLF.
 static std::string Slurp(const fs::path& p)
 {
     std::string s;
     ReadFile(U8String(p), s);
+    s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
     return s;
 }
 

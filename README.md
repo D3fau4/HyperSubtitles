@@ -36,6 +36,7 @@ runs everything from the game install: extracts `VOICE` and `VOICE_EN`, transcri
 - `tools/extract/`: voice WAVs from the XACT banks (`SOUND.xsb` + `SOUND.xwb`), a `DW_PACK` `.pac` extractor (`extract_pac.py`), event script text (`parse_event_scripts.py`) and character portraits for the DLL (`extract_portraits.py --game ...`, then wire new ones in `Dll1/resource.h`, `HyperSubtitles.rc` and `k_portraits`). See its `README.md`.
 - `tools/transcribe/`: Whisper transcription. Extracted audio goes in `tools/transcribe/wav_out/`, which is not tracked.
 - `tools/lines/lines.py`: builds and exports the line database.
+- `tools/package/package.py`: builds the shareable zip (`mod/` with `winmm.dll`, `subtitles.json` and `dialoguebox.json`; `editor/` with the editor, `data/` and the portraits; `LEEME.txt`). CI runs it in the `package` job and uploads it as the `HyperSubtitles-<commit>` artifact; locally: `python tools/package/package.py --dll Release/winmm.dll --editor Editor/build/Release/HyperSubtitlesEditor.exe` (output in `Releases/`). The game font is never included.
 - `data/characters.json`: character ids (the game's event speaker ids), names, portrait source and battle voice prefix.
 - `data/subtitles.json`: subtitles loaded by the DLL. Copy it next to the game executable as `subtitles.json`.
 - `docs/audio-xact-mapping.md`: how the game maps CriWare `.hca` paths and ACB cue IDs to XACT cues.

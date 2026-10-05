@@ -1,0 +1,29 @@
+HyperSubtitles ({version})
+========================
+
+mod/  -  Subtítulos en el juego
+  Copia winmm.dll, subtitles.json y dialoguebox.json en la carpeta del juego
+  (junto al ejecutable de Neptunia Re;Birth1). La fuente del juego
+  (FOT-NewRodinPro-EB.otf) ya está en esa carpeta; no hace falta copiarla.
+
+editor/  -  Editor de traducciones (Windows)
+  Abre HyperSubtitlesEditor.exe. Encuentra solo la carpeta data/ y los retratos
+  de faces/ que hay a su lado.
+  - La primera vez abre Ajustes: elige la carpeta del juego para tener la preview
+    exacta (fuente del juego) y poder escuchar las voces (data/SOUND.xsb/xwb).
+  - Idioma de la interfaz: Ajustes > Interfaz > Idioma (español / inglés).
+  - Archivo > Exportar subtitles.json... genera el archivo para el mod, y
+    "Exportar e instalar en el juego" lo copia directamente con dialoguebox.json.
+  - Las traducciones se guardan en editor/data/lines/*.json: comparte esa carpeta
+    para juntar el trabajo.
+
+----
+
+mod/  -  In-game subtitles
+  Copy winmm.dll, subtitles.json and dialoguebox.json into the game folder (next
+  to the Neptunia Re;Birth1 executable). The game font is already there.
+
+editor/  -  Translation editor (Windows)
+  Run HyperSubtitlesEditor.exe; it finds data/ and faces/ next to it. On first
+  run, set the game folder in Settings for the exact preview and the voices.
+  Interface language: Settings > Interface > Language.
