@@ -1,14 +1,16 @@
 """
-Builds the shareable release: HyperSubtitles-<version>/ and HyperSubtitles-<version>.zip.
+Builds a shareable release for one platform:
+HyperSubtitles-<version>-<platform>/ and HyperSubtitles-<version>-<platform>.zip.
 
   mod/     winmm.dll + subtitles.json (exported from data/lines) + dialoguebox.json
-  editor/  HyperSubtitlesEditor.exe + data/ (lines, characters, dialoguebox) + faces/
-  LEEME.txt
+           (the game is Windows only; on Linux it runs through Proton, so both get it)
+  editor/  the editor for that platform + data/ (lines, characters, dialoguebox) + faces/
+  LEEME.txt  (from LEEME-<platform>.txt)
 
 The game font is not included: the mod loads it from the game folder.
 Used by CI (.github/workflows/build.yml, job package) and locally:
 
-  python tools/package/package.py --dll Release/winmm.dll \\
+  python tools/package/package.py --platform windows --dll Release/winmm.dll \\
       --editor Editor/build/Release/HyperSubtitlesEditor.exe
 """
 
@@ -18,9 +20,15 @@ import argparse
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+PLATFORMS = {
+    # platform: (editor file name in the package, LEEME line endings)
+    "windows": ("HyperSubtitlesEditor.exe", "\r\n"),
+    "linux": ("HyperSubtitlesEditor", "\n"),
+}
 
 
 def copy_text(src: Path, dst: Path) -> None:
@@ -35,10 +43,30 @@ def git_version() -> str:
     return result.stdout.strip() if result.returncode == 0 else "dev"
 
 
+def write_zip(root: Path, archive: Path, executables: set[Path]) -> None:
+    """Zips root (as its own top folder) with Unix permissions, so the Linux editor
+    stays executable whatever OS builds the zip."""
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
+        for path in sorted(root.rglob("*")):
+            arcname = path.relative_to(root.parent).as_posix()
+            if path.is_dir():
+                info = zipfile.ZipInfo(arcname + "/")
+                info.create_system = 3
+                info.external_attr = (0o40755 << 16) | 0x10
+                z.writestr(info, b"")
+                continue
+            info = zipfile.ZipInfo.from_file(path, arcname)
+            info.create_system = 3  # Unix, or unzip ignores the permissions
+            info.external_attr = (0o100755 if path in executables else 0o100644) << 16
+            info.compress_type = zipfile.ZIP_DEFLATED
+            z.writestr(info, path.read_bytes())
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build the HyperSubtitles release zip.")
+    parser = argparse.ArgumentParser(description="Build a HyperSubtitles release zip.")
+    parser.add_argument("--platform", choices=sorted(PLATFORMS), required=True)
     parser.add_argument("--dll", type=Path, required=True, help="winmm.dll (Release x86)")
-    parser.add_argument("--editor", type=Path, required=True, help="HyperSubtitlesEditor.exe")
+    parser.add_argument("--editor", type=Path, required=True, help="Editor binary for --platform")
     parser.add_argument("--out", type=Path, default=REPO / "Releases", help="Output folder")
     parser.add_argument("--version", default=None, help="Defaults to the short commit hash")
     args = parser.parse_args()
@@ -48,8 +76,9 @@ def main() -> int:
             print(f"missing {path}", file=sys.stderr)
             return 1
 
+    editor_name, leeme_newline = PLATFORMS[args.platform]
     version = args.version or git_version()
-    name = f"HyperSubtitles-{version}"
+    name = f"HyperSubtitles-{version}-{args.platform}"
     root = args.out / name
     if root.exists():
         shutil.rmtree(root)
@@ -64,7 +93,9 @@ def main() -> int:
 
     editor = root / "editor"
     editor.mkdir()
-    shutil.copy2(args.editor, editor / args.editor.name)
+    editor_bin = editor / editor_name
+    shutil.copy2(args.editor, editor_bin)
+    editor_bin.chmod(0o755)
     for lines in sorted((data / "lines").glob("*.json")):
         copy_text(lines, editor / "data" / "lines" / lines.name)
     for name_ in ("characters.json", "dialoguebox.json"):
@@ -73,10 +104,12 @@ def main() -> int:
     for face in sorted((REPO / "Dll1" / "faces").glob("*.png")):
         shutil.copy2(face, editor / "faces" / face.name)
 
-    leeme = (Path(__file__).parent / "LEEME.txt").read_text(encoding="utf-8").replace("{version}", version)
-    (root / "LEEME.txt").write_text(leeme.replace("\r\n", "\n"), encoding="utf-8", newline="\r\n")
+    template = Path(__file__).parent / f"LEEME-{args.platform}.txt"
+    leeme = template.read_text(encoding="utf-8").replace("\r\n", "\n").replace("{version}", version)
+    (root / "LEEME.txt").write_text(leeme, encoding="utf-8", newline=leeme_newline)
 
-    archive = shutil.make_archive(str(args.out / name), "zip", root_dir=args.out, base_dir=name)
+    archive = args.out / f"{name}.zip"
+    write_zip(root, archive, {editor_bin})
     print(f"{root}\n{archive}")
     return 0
 

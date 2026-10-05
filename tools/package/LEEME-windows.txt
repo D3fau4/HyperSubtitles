@@ -1,5 +1,5 @@
-HyperSubtitles ({version})
-========================
+HyperSubtitles ({version}) - Windows
+==================================
 
 mod/  -  Subtítulos en el juego
   Copia winmm.dll, subtitles.json y dialoguebox.json en la carpeta del juego

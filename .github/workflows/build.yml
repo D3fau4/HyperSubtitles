@@ -59,7 +59,7 @@ jobs:
       - name: Test
         run: ctest --test-dir Editor/build -C Release --output-on-failure
 
-      - name: Upload artifact
+      - name: Upload artifact (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
@@ -67,8 +67,23 @@ jobs:
           path: Editor/build/Release/HyperSubtitlesEditor.exe
           if-no-files-found: error
 
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypersubtitles-editor-linux
+          path: Editor/build/HyperSubtitlesEditor
+          if-no-files-found: error
+
   package:
     needs: [build, editor]
+    strategy:
+      matrix:
+        include:
+          - platform: windows
+            editor: HyperSubtitlesEditor.exe
+          - platform: linux
+            editor: HyperSubtitlesEditor
     runs-on: ubuntu-latest
 
     steps:
@@ -83,20 +98,21 @@ jobs:
       - name: Download editor
         uses: actions/download-artifact@v4
         with:
-          name: hypersubtitles-editor-windows
+          name: hypersubtitles-editor-${{ matrix.platform }}
           path: artifacts/editor
 
       - name: Build release package
-        run: |
-          python3 tools/package/package.py \
-            --dll "$(find artifacts/winmm -name winmm.dll | head -n 1)" \
-            --editor artifacts/editor/HyperSubtitlesEditor.exe \
-            --out dist --version "${GITHUB_SHA::7}"
-          echo "PACKAGE=HyperSubtitles-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+        run: >-
+          python3 tools/package/package.py --platform ${{ matrix.platform }}
+          --dll "$(find artifacts/winmm -name winmm.dll | head -n 1)"
+          --editor artifacts/editor/${{ matrix.editor }}
+          --out dist --version "${GITHUB_SHA::7}"
 
+      # The zip itself (not the folder): artifacts lose Unix permissions, and the
+      # Linux editor must stay executable.
       - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PACKAGE }}
-          path: dist/${{ env.PACKAGE }}
+          name: HyperSubtitles-${{ matrix.platform }}
+          path: dist/HyperSubtitles-*-${{ matrix.platform }}.zip
           if-no-files-found: error
