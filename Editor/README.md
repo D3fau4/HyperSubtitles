@@ -11,8 +11,8 @@ Editor para traducir los subtítulos de voz. Trabaja directamente sobre
 - **Preview exacta**: la caja se dibuja con el mismo código que la DLL
   (`shared/DialogueBoxCore`), el mismo Dear ImGui (submódulo `imgui`), la fuente del juego
   (`FOT-NewRodinPro-EB.otf`) y la configuración de `data/dialoguebox.json`, en un framebuffer
-  del tamaño de la resolución elegida. Con el zoom al **100%** cada píxel del juego es un píxel de
-  pantalla. Se puede poner de fondo una captura del juego y guardar la preview como PNG para
+  del tamaño de la resolución elegida. El zoom **Caja** (por defecto) amplía la caja para leerla
+  cómodamente; con **100%** cada píxel del juego es un píxel de pantalla. Se puede poner de fondo una captura del juego y guardar la preview como PNG para
   compararla con una captura real.
 - **Voces**: reproduce el audio japonés (`VOICE`) e inglés (`VOICE_EN`) leyendo
   directamente `data/SOUND.xsb` y `data/SOUND.xwb` de la carpeta del juego (MS-ADPCM).

@@ -75,7 +75,7 @@ bool Settings::Load()
     Read(j, "uiFontSize", uiFontSize);
     Read(j, "previewWidth", previewWidth);
     Read(j, "previewHeight", previewHeight);
-    Read(j, "previewZoom", previewZoom);
+    Read(j, "previewScale", previewScale);
     Read(j, "useBackgroundImage", useBackgroundImage);
     Read(j, "backgroundImage", backgroundImage);
     if (j.contains("backgroundColor") && j["backgroundColor"].is_array() && j["backgroundColor"].size() == 3)
@@ -99,7 +99,7 @@ bool Settings::Save() const
     j["uiFontSize"] = uiFontSize;
     j["previewWidth"] = previewWidth;
     j["previewHeight"] = previewHeight;
-    j["previewZoom"] = previewZoom;
+    j["previewScale"] = previewScale;
     j["useBackgroundImage"] = useBackgroundImage;
     j["backgroundImage"] = backgroundImage;
     j["backgroundColor"] = { backgroundColor[0], backgroundColor[1], backgroundColor[2] };
