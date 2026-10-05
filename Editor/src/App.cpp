@@ -202,8 +202,17 @@ void App::LoadProject()
         return;
     }
     ++m_configRevision;
+    m_filterCategory = -1;
     m_preview.LoadPortraits(m_settings.PortraitsDir(), m_project);
-    SetStatusMessage("Cargadas " + std::to_string(m_project.lines.size()) + " líneas de " + m_settings.dataDir);
+    std::string message = "Cargadas " + std::to_string(m_project.lines.size()) + " líneas de " + m_settings.dataDir;
+    if (!m_project.skippedFiles.empty())
+    {
+        message += " (ignorados, no son de líneas:";
+        for (const std::string& f : m_project.skippedFiles)
+            message += " " + f;
+        message += ")";
+    }
+    SetStatusMessage(message);
 }
 
 void App::ReloadGameAssets()
@@ -562,7 +571,7 @@ bool App::Frame()
     {
         ImGui::Spacing();
         ImGui::TextWrapped("No hay proyecto cargado. Abre Archivo > Ajustes y elige la carpeta data/ del repositorio "
-                           "(la que contiene lines/event.json y lines/battle.json).");
+                           "(la que contiene lines/ con los .json de líneas, p. ej. lines/battle.json).");
         if (ImGui::Button("Abrir ajustes"))
             m_settings.showSettings = true;
     }
@@ -699,16 +708,17 @@ void App::DrawMenuBar()
 
 void App::DrawHeader()
 {
-    const char* names[3] = { "BATTLE", "EVENT", "Total" };
-    if (ImGui::BeginTable("##progress", 3, ImGuiTableFlags_SizingStretchSame))
+    const int columns = int(m_analysis.counts.size());
+    if (columns == int(m_project.categories.size()) + 1 && ImGui::BeginTable("##progress", columns, ImGuiTableFlags_SizingStretchSame))
     {
         ImGui::TableNextRow();
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < columns; ++i)
         {
             ImGui::TableNextColumn();
             const Analysis::Counts& c = m_analysis.counts[i];
             const float total = float(std::max(c.total, 1));
-            ImGui::Text("%s  %d líneas", names[i], c.total);
+            const char* name = i + 1 < columns ? m_project.categories[i].c_str() : "Total";
+            ImGui::Text("%s  %d líneas", name, c.total);
             // Stacked bar: reviewed, translated, pending
             const ImVec2 p = ImGui::GetCursorScreenPos();
             const float w = ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x;
@@ -758,12 +768,17 @@ void App::DrawList()
         m_filterDirty = true;
     ImGui::SameLine();
     ImGui::SetNextItemWidth(w * 0.17f);
-    const char* cats[] = { "Todas", "BATTLE", "EVENT" };
-    int cat = m_filterCategory + 1;
-    if (ImGui::Combo("##cat", &cat, cats, 3))
+    const char* catPreview = m_filterCategory >= 0 && m_filterCategory < int(m_project.categories.size())
+                                 ? m_project.categories[m_filterCategory].c_str() : "Todas";
+    if (ImGui::BeginCombo("##cat", catPreview))
     {
-        m_filterCategory = cat - 1;
-        m_filterDirty = true;
+        for (int c = -1; c < int(m_project.categories.size()); ++c)
+            if (ImGui::Selectable(c < 0 ? "Todas" : m_project.categories[c].c_str(), m_filterCategory == c))
+            {
+                m_filterCategory = c;
+                m_filterDirty = true;
+            }
+        ImGui::EndCombo();
     }
     ImGui::SameLine();
     ImGui::SetNextItemWidth(w * 0.17f);
@@ -862,7 +877,7 @@ void App::DrawList()
             }
             if (ImGui::BeginItemTooltip())
             {
-                ImGui::Text("%s/%s  -  %s", kCategories[line.category], line.id.c_str(), kStatusNames[int(status)]);
+                ImGui::Text("%s/%s  -  %s", m_project.categories[line.category].c_str(), line.id.c_str(), kStatusNames[int(status)]);
                 ImGui::EndTooltip();
             }
 
@@ -923,7 +938,7 @@ void App::DrawDetail()
 
     // Title + status
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("%s / %s", kCategories[line.category], line.id.c_str());
+    ImGui::Text("%s / %s", m_project.categories[line.category].c_str(), line.id.c_str());
     ImGui::SameLine(0, ImGui::GetFontSize() * 2);
     const Status status = Project::GetStatus(e);
     for (int s = 0; s < 3; ++s)
@@ -1432,7 +1447,7 @@ void App::DrawSettings()
         ImGui::PopID();
     };
 
-    pathField("Carpeta de datos", "La carpeta data/ con lines/event.json, lines/battle.json, characters.json y dialoguebox.json.\n"
+    pathField("Carpeta de datos", "La carpeta data/ con lines/*.json (cada archivo válido es una categoría), characters.json y dialoguebox.json.\n"
               "Cada equipo de traducción tiene su propia copia.", m_editDataDir, DialogTarget::DataDir);
     pathField("Carpeta del juego", "Donde está instalado el juego. Se usa para la fuente FOT-NewRodinPro-EB.otf, "
               "las voces (data/SOUND.xsb y data/SOUND.xwb) y para instalar los subtítulos.", m_editGameDir, DialogTarget::GameDir);

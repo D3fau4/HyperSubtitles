@@ -35,7 +35,7 @@ public:
     std::string SourceKey(const Project& project, size_t line) const;
 
     struct Counts { int total = 0, pending = 0, translated = 0, reviewed = 0, warnings = 0; };
-    Counts counts[3];  // BATTLE, EVENT, all
+    std::vector<Counts> counts;  // one per category, then the total
 
 private:
     uint64_t m_projectRevision = ~0ull;

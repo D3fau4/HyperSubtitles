@@ -115,6 +115,15 @@ bool Settings::Save() const
     return static_cast<bool>(file);
 }
 
+static bool HasLinesJson(const fs::path& dir)
+{
+    std::error_code ec;
+    for (fs::directory_iterator it(dir / "lines", ec), end; !ec && it != end; it.increment(ec))
+        if (it->path().extension() == ".json")
+            return true;
+    return false;
+}
+
 std::string FindDefaultDataDir()
 {
     std::vector<fs::path> starts;
@@ -127,9 +136,9 @@ std::string FindDefaultDataDir()
     {
         for (int up = 0; up < 6 && !dir.empty(); ++up)
         {
-            if (fs::exists(dir / "data" / "lines" / "event.json", ec))
+            if (HasLinesJson(dir / "data"))
                 return U8String((dir / "data").lexically_normal());
-            if (fs::exists(dir / "lines" / "event.json", ec))
+            if (HasLinesJson(dir))
                 return U8String(dir.lexically_normal());
             fs::path parent = dir.parent_path();
             if (parent == dir)

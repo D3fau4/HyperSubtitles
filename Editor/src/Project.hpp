@@ -22,8 +22,6 @@ inline constexpr AudioLang kAudioLangs[2] = {
     { "en", "VOICE_EN", "e", "EN" },
 };
 
-inline constexpr const char* kCategories[2] = { "BATTLE", "EVENT" };
-
 struct Character
 {
     int         id = -1;
@@ -34,12 +32,13 @@ struct Character
 
 struct Line
 {
-    int         category = 0;  // index in kCategories
+    int         category = 0;  // index in Project::categories
     std::string id;
     ojson*      entry = nullptr;
 };
 
-// The line database (data/lines/*.json), characters and box config.
+// The line database, characters and box config. Every data/lines/*.json whose
+// values are all line entries is a category named after the file (battle.json -> BATTLE).
 // Saving writes exactly what tools/lines/lines.py save_category() writes.
 class Project
 {
@@ -50,6 +49,8 @@ public:
     const std::string& DataDir() const { return m_dataDir; }
 
     std::vector<Line>               lines;
+    std::vector<std::string>        categories;    // sorted
+    std::vector<std::string>        skippedFiles;  // lines/*.json without the line structure
     std::map<int, Character>        characters;
     DialogueBoxCore::Config         boxConfig = DialogueBoxCore::DefaultGameConfig();
     bool                            boxConfigDirty = false;
@@ -102,7 +103,8 @@ private:
 
     bool        m_loaded = false;
     std::string m_dataDir;
-    ojson       m_files[2];
+    std::vector<std::string> m_fileNames;
+    std::vector<ojson> m_files;
     std::vector<Edit> m_undo;
     size_t      m_undoPos = 0;
     bool        m_dirty = false;

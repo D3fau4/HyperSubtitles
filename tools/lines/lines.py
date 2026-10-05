@@ -1,7 +1,9 @@
 """
 Voice line database for HyperSubtitles.
 
-data/lines/battle.json and data/lines/event.json hold one entry per voice id:
+Every data/lines/*.json made only of line entries is a category named after the
+file (battle.json -> BATTLE, audio in VOICE/BATTLE/...). Each holds one entry per
+voice id:
 
   "80101001": {
     "character": 1,
@@ -94,10 +96,36 @@ def load_category(data_dir: Path, category: str) -> dict:
 
 def save_category(data_dir: Path, category: str, lines: dict) -> Path:
     data_dir.mkdir(parents=True, exist_ok=True)
-    path = data_dir / f"{category.lower()}.json"
+    return save_lines(data_dir / f"{category.lower()}.json", lines)
+
+
+def save_lines(path: Path, lines: dict) -> Path:
     text = json.dumps(dict(sorted(lines.items())), ensure_ascii=False, indent=2) + "\n"
     path.write_text(text, encoding="utf-8", newline="\n")
     return path
+
+
+def is_lines_file(data) -> bool:
+    """Must match IsLinesFile() in Editor/src/Project.cpp."""
+    if not isinstance(data, dict) or not data:
+        return False
+    return all(
+        isinstance(entry, dict) and any(isinstance(entry.get(lang), dict) for lang, _ in LANGUAGES)
+        for entry in data.values()
+    )
+
+
+def line_files(data_dir: Path) -> list[tuple[str, Path, dict]]:
+    """(CATEGORY, path, lines) for every lines file in data_dir, sorted by category."""
+    found = []
+    for path in sorted(data_dir.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if is_lines_file(data):
+            found.append((path.stem.upper(), path, data))
+    return sorted(found, key=lambda f: f[0])
 
 
 def battle_characters() -> dict[str, int]:
@@ -225,8 +253,8 @@ def export_po(args: argparse.Namespace) -> int:
         "",
     ]
     count = 0
-    for category in CATEGORIES:
-        for voice_id, entry in sorted(load_category(args.data, category).items()):
+    for category, _, lines in line_files(args.data):
+        for voice_id, entry in sorted(lines.items()):
             source = entry.get("en", {}).get("text") or entry.get("ja", {}).get("text")
             if not source:
                 continue
@@ -277,8 +305,7 @@ def parse_po(path: Path) -> dict[str, str]:
 def import_po(args: argparse.Namespace) -> int:
     translations = parse_po(Path(args.po))
     updated = 0
-    for category in CATEGORIES:
-        lines = load_category(args.data, category)
+    for category, path, lines in line_files(args.data):
         for voice_id, entry in lines.items():
             text = translations.get(f"{category}/{voice_id}")
             if text is None or text == entry.get("text", ""):
@@ -287,7 +314,7 @@ def import_po(args: argparse.Namespace) -> int:
             if text and entry.get("status", "pending") == "pending":
                 entry["status"] = "translated"
             updated += 1
-        save_category(args.data, category, lines)
+        save_lines(path, lines)
     print(f"{updated} translations updated")
     return 0
 
@@ -308,8 +335,8 @@ def display_text(entry: dict) -> str:
 
 def export_subtitles(args: argparse.Namespace) -> int:
     subtitles = []
-    for category in CATEGORIES:
-        for voice_id, entry in sorted(load_category(args.data, category).items()):
+    for category, _, lines in line_files(args.data):
+        for voice_id, entry in sorted(lines.items()):
             for lang, folder in LANGUAGES:
                 audio = entry.get(lang, {})
                 if "duration" not in audio:
@@ -335,7 +362,7 @@ def export_subtitles(args: argparse.Namespace) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="HyperSubtitles voice line database.")
-    parser.add_argument("--data", type=Path, default=DEFAULT_DATA, help="Folder with battle.json / event.json")
+    parser.add_argument("--data", type=Path, default=DEFAULT_DATA, help="Folder with the lines files (battle.json, ...)")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("build", help="Merge audio, transcripts and event script text")

@@ -96,6 +96,27 @@ static ojson NormalizeEntry(ojson e)
     return Ordered(e, kEntryKeys, std::size(kEntryKeys));
 }
 
+// Same rule as lines.py is_lines_file(): a non-empty object whose values are all
+// objects with a "ja" or "en" object.
+static bool IsLinesFile(const ojson& j)
+{
+    if (!j.is_object() || j.empty())
+        return false;
+    for (auto it = j.begin(); it != j.end(); ++it)
+    {
+        const ojson& entry = it.value();
+        if (!entry.is_object())
+            return false;
+        const bool hasLang = std::any_of(std::begin(kAudioLangs), std::end(kAudioLangs), [&](const AudioLang& lang) {
+            auto it = entry.find(lang.key);
+            return it != entry.end() && it->is_object();
+        });
+        if (!hasLang)
+            return false;
+    }
+    return true;
+}
+
 static std::string Dump(const ojson& j, int indent)
 {
     return j.dump(indent, ' ', false, ojson::error_handler_t::replace) + "\n";
@@ -116,22 +137,38 @@ bool Project::Load(const std::string& dataDir, std::string& error)
     m_changedLines.clear();
     m_dataDir = dataDir;
 
-    for (int c = 0; c < 2; ++c)
+    categories.clear();
+    skippedFiles.clear();
+    m_fileNames.clear();
+    m_files.clear();
+
+    const fs::path linesDir = U8Path(dataDir) / "lines";
+    std::vector<std::pair<std::string, fs::path>> found;
+    std::error_code ec;
+    for (fs::directory_iterator it(linesDir, ec), end; !ec && it != end; it.increment(ec))
     {
-        std::string name = kCategories[c];
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-        const std::string path = U8String(U8Path(dataDir) / "lines" / (name + ".json"));
-        std::string text;
-        if (!ReadFile(path, text))
-        {
-            m_files[c] = ojson::object();
+        const fs::path& path = it->path();
+        if (!it->is_regular_file(ec) || path.extension() != ".json")
             continue;
+        std::string name = U8String(path.stem());
+        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
+        found.emplace_back(std::move(name), path);
+    }
+    std::sort(found.begin(), found.end());
+
+    for (auto& [name, path] : found)
+    {
+        std::string text;
+        if (!ReadFile(U8String(path), text))
+        {
+            error = U8String(path) + ": cannot read";
+            return false;
         }
         ojson j = ojson::parse(text, nullptr, false);
-        if (!j.is_object())
+        if (!IsLinesFile(j))
         {
-            error = path + ": invalid JSON";
-            return false;
+            skippedFiles.push_back(U8String(path.filename()));
+            continue;
         }
         // lines.py writes the ids sorted; keep that order.
         std::vector<std::string> keys;
@@ -145,17 +182,18 @@ bool Project::Load(const std::string& dataDir, std::string& error)
                 sorted[k] = std::move(j[k]);
             j = std::move(sorted);
         }
-        m_files[c] = std::move(j);
+        categories.push_back(name);
+        m_fileNames.push_back(U8String(path.filename()));
+        m_files.push_back(std::move(j));
     }
 
-    for (int c = 0; c < 2; ++c)
+    for (size_t c = 0; c < m_files.size(); ++c)
         for (auto it = m_files[c].begin(); it != m_files[c].end(); ++it)
-            if (it.value().is_object())
-                lines.push_back(Line{ c, it.key(), &it.value() });
+            lines.push_back(Line{ int(c), it.key(), &it.value() });
 
     if (lines.empty())
     {
-        error = "no lines found in " + U8String(U8Path(dataDir) / "lines");
+        error = "no lines found in " + U8String(linesDir);
         return false;
     }
 
@@ -220,14 +258,12 @@ bool Project::Save(std::string& error)
 {
     if (!m_loaded)
         return false;
-    for (int c = 0; c < 2; ++c)
+    const fs::path dir = U8Path(m_dataDir) / "lines";
+    std::error_code ec;
+    fs::create_directories(dir, ec);
+    for (size_t c = 0; c < m_files.size(); ++c)
     {
-        std::string name = kCategories[c];
-        std::transform(name.begin(), name.end(), name.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-        const fs::path dir = U8Path(m_dataDir) / "lines";
-        std::error_code ec;
-        fs::create_directories(dir, ec);
-        const std::string path = U8String(dir / (name + ".json"));
+        const std::string path = U8String(dir / U8Path(m_fileNames[c]));
         if (!WriteFileAtomic(path, Dump(m_files[c], 2)))
         {
             error = "cannot write " + path;

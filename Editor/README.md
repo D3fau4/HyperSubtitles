@@ -1,8 +1,8 @@
 # HyperSubtitles Editor
 
 Editor para traducir los subtítulos de voz. Trabaja directamente sobre
-`data/lines/event.json` y `data/lines/battle.json` (el mismo formato que escribe
-`tools/lines/lines.py`) y muestra la caja de diálogo tal y como se ve en el juego.
+los `data/lines/*.json` (el mismo formato que escribe `tools/lines/lines.py`; cada
+archivo con esa estructura es una categoría, p. ej. `battle.json` -> BATTLE) y muestra la caja de diálogo tal y como se ve en el juego.
 
 ## Qué hace
 

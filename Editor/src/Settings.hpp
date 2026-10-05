@@ -32,6 +32,6 @@ struct Settings
     static std::string FilePath();
 };
 
-// Looks for a folder containing lines/event.json near the executable and the
+// Looks for a folder containing lines/*.json near the executable and the
 // working directory (the repo's data/ folder). Empty if not found.
 std::string FindDefaultDataDir();

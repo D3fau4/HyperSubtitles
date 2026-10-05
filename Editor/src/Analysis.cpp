@@ -88,12 +88,11 @@ void Analysis::Update(Project& project, Preview& preview, const Settings& settin
                 m_warnings[i] = Compute(project, preview, settings, i);
     }
 
-    for (Counts& c : counts)
-        c = {};
+    counts.assign(project.categories.size() + 1, Counts{});
     for (size_t i = 0; i < project.lines.size(); ++i)
     {
         const ojson& e = *project.lines[i].entry;
-        for (Counts* c : { &counts[project.lines[i].category], &counts[2] })
+        for (Counts* c : { &counts[project.lines[i].category], &counts.back() })
         {
             ++c->total;
             switch (Project::GetStatus(e))

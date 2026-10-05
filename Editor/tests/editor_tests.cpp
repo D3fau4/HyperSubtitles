@@ -1,6 +1,6 @@
 // editor_tests <repo data dir> <display_text_cases.json> <output dir>
 //
-// - Loading and saving the line database without edits is byte-identical.
+// - Every lines/*.json is loaded (other JSON files are skipped); saving without edits is byte-identical.
 // - SubtitleText::DisplayText matches the shared cases (also run by tools/lines/test_lines.py).
 // - Edits, automatic status, undo/redo and key order.
 // - Writes an edited copy of the data to <out>/rt and the editor export to
@@ -11,8 +11,11 @@
 #include "Paths.hpp"
 #include "../../shared/SubtitleText.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
+#include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -47,9 +50,18 @@ int main(int argc, char** argv)
     std::error_code ec;
     fs::remove_all(out, ec);
     fs::create_directories(rt / "lines");
-    for (const char* f : { "lines/event.json", "lines/battle.json", "characters.json", "dialoguebox.json" })
+    std::vector<std::string> lineFiles;
+    for (const auto& file : fs::directory_iterator(data / "lines"))
+        if (file.path().extension() == ".json")
+        {
+            lineFiles.push_back("lines/" + U8String(file.path().filename()));
+            fs::copy_file(file.path(), rt / lineFiles.back());
+        }
+    for (const char* f : { "characters.json", "dialoguebox.json" })
         if (fs::exists(data / f))
             fs::copy_file(data / f, rt / f);
+    const std::string notLines = "{\n  \"version\": 1\n}\n";
+    CHECK(WriteFileAtomic(U8String(rt / "lines" / "notes.json"), notLines));
 
     // --- Display text cases
     {
@@ -72,12 +84,16 @@ int main(int argc, char** argv)
     std::string error;
     CHECK(project.Load(U8String(rt), error));
     CHECK(!project.lines.empty());
+    CHECK(project.categories.size() == lineFiles.size());
+    CHECK(std::is_sorted(project.categories.begin(), project.categories.end()));
+    CHECK(project.skippedFiles == std::vector<std::string>{ "notes.json" });
     CHECK(project.Save(error));
-    for (const char* f : { "lines/event.json", "lines/battle.json" })
+    CHECK(Slurp(rt / "lines" / "notes.json") == notLines);
+    for (const std::string& f : lineFiles)
     {
         const bool same = Slurp(data / f) == Slurp(rt / f);
         if (!same)
-            std::printf("FAIL round trip changed %s\n", f);
+            std::printf("FAIL round trip changed %s\n", f.c_str());
         CHECK(same);
     }
     // dialoguebox.json round trip

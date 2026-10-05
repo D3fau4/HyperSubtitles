@@ -6,7 +6,7 @@
 
 std::string BuildSubtitlesJson(const Project& project, size_t* count)
 {
-    // lines.py: for category in (BATTLE, EVENT), for id in sorted ids, for lang in (ja, en)
+    // lines.py: for category in sorted categories, for id in sorted ids, for lang in (ja, en)
     std::vector<const Line*> ordered;
     ordered.reserve(project.lines.size());
     for (const Line& l : project.lines)
@@ -28,7 +28,7 @@ std::string BuildSubtitlesJson(const Project& project, size_t* count)
             if (text.empty())
                 continue;
             ojson sub = ojson::object();
-            sub["audioFile"] = std::string("/") + lang.folder + "/" + kCategories[line->category] + "/" + line->id + ".hca";
+            sub["audioFile"] = std::string("/") + lang.folder + "/" + project.categories[line->category] + "/" + line->id + ".hca";
             sub["character"] = e.contains("character") ? e["character"] : ojson(-1);
             sub["text"] = text;
             sub["duration"] = audio->contains("displayDuration") ? (*audio)["displayDuration"] : (*audio)["duration"];
