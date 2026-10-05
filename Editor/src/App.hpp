@@ -46,6 +46,7 @@ private:
     void DrawList();
     void DrawDetail();
     void DrawPreview();
+    void RenderPreview(float rasterScale);
     void DrawBoxSettings();
     void DrawSettings();
     void DrawQuitModal();

@@ -7,6 +7,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <filesystem>
 #include <vector>
@@ -204,23 +206,37 @@ void Preview::EnsureFramebuffer(int width, int height)
 }
 
 void Preview::Render(const DialogueBoxCore::Config& cfg, const std::string& text, int character,
-                     int width, int height, const float bgColor[3], bool useBgImage)
+                     int width, int height, const float bgColor[3], bool useBgImage, float rasterScale)
 {
     if (!m_ctx)
         return;
     width = std::max(width, 16);
     height = std::max(height, 16);
-    EnsureFramebuffer(width, height);
+    // Keep the framebuffer within what any GL 3 driver supports.
+    rasterScale = std::clamp(rasterScale, 0.05f, 8192.0f / float(std::max(width, height)));
+    const int fboW = std::max(1, int(std::lround(width * rasterScale)));
+    const int fboH = std::max(1, int(std::lround(height * rasterScale)));
+    EnsureFramebuffer(fboW, fboH);
+    m_gameWidth = width;
+    m_gameHeight = height;
+    m_rasterScale = rasterScale;
 
     ImGuiContext* prev = ImGui::GetCurrentContext();
     ImGui::SetCurrentContext(m_ctx);
     ImGuiIO& io = ImGui::GetIO();
+    // Layout always happens in game pixels (DisplaySize). The framebuffer scale only
+    // changes how many screen pixels each game pixel gets: ImGui then rasterizes the
+    // glyphs at that density (glyph advances, and so line wrapping, do not depend on it).
+    // rasterScale 1 = exactly the pixels the DLL draws in game.
     io.DisplaySize = ImVec2(float(width), float(height));
-    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    io.DisplayFramebufferScale = ImVec2(rasterScale, rasterScale);
     io.DeltaTime = 1.0f / 60.0f;
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
+    // Anti-aliased edges one screen pixel wide, as ImGui does on high-DPI screens.
+    ImGui::GetForegroundDrawList()->_FringeScale = 1.0f / rasterScale;
+    ImGui::GetBackgroundDrawList()->_FringeScale = 1.0f / rasterScale;
     if (useBgImage && m_bgTexture)
         ImGui::GetBackgroundDrawList()->AddImage(ImTextureID(m_bgTexture), ImVec2(0, 0), io.DisplaySize);
     if (!text.empty())
@@ -235,7 +251,7 @@ void Preview::Render(const DialogueBoxCore::Config& cfg, const std::string& text
     gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &prevFbo);
     gl::GetIntegerv(gl::VIEWPORT, prevViewport);
     gl::BindFramebuffer(gl::FRAMEBUFFER, m_fbo);
-    gl::Viewport(0, 0, width, height);
+    gl::Viewport(0, 0, fboW, fboH);
     gl::ClearColor(bgColor[0], bgColor[1], bgColor[2], 1.0f);
     gl::Clear(gl::COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

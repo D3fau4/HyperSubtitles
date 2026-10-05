@@ -163,6 +163,7 @@ bool App::Init(SDL_Window* window, const char* glslVersion, const Options& optio
 void App::SaveScreenshots(const std::string& path, int windowW, int windowH)
 {
     std::string error;
+    RenderPreview(1.0f);
     if (!m_preview.SavePng(path, error))
         SDL_Log("%s", error.c_str());
 
@@ -373,6 +374,7 @@ void App::PollDialogs()
         if (fs::path(U8Path(result)).extension().empty())
             result += ".png";
         std::string error;
+        RenderPreview(1.0f);  // the exact in-game pixels
         if (m_preview.SavePng(result, error))
             SetStatusMessage("Preview guardada en " + result);
         else
@@ -1171,6 +1173,20 @@ void App::DrawDetail()
 // Preview
 // ---------------------------------------------------------------------------
 
+void App::RenderPreview(float rasterScale)
+{
+    std::string text;
+    int character = -1;
+    if (m_project.IsLoaded() && m_selected != SIZE_MAX)
+    {
+        const ojson& e = *m_project.lines[m_selected].entry;
+        text = Project::DisplayText(e);
+        character = Project::GetCharacter(e);
+    }
+    m_preview.Render(m_project.boxConfig, text, character, m_settings.previewWidth, m_settings.previewHeight,
+                     m_settings.backgroundColor, m_settings.useBackgroundImage, rasterScale);
+}
+
 void App::DrawPreview()
 {
     // Toolbar
@@ -1256,31 +1272,26 @@ void App::DrawPreview()
         ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f),
                            "No se encuentra %s en la carpeta del juego: la preview NO es exacta.", DialogueBoxCore::kFontFile);
 
-    // Render the selected line
+    // Selected line
     std::string text;
-    int character = -1;
     DialogueBoxCore::Layout layout;
     if (m_selected != SIZE_MAX)
     {
         const ojson& e = *m_project.lines[m_selected].entry;
         text = Project::DisplayText(e);
-        character = Project::GetCharacter(e);
         const DialogueBoxCore::Layout& l = layout = m_preview.Measure(m_project.boxConfig, text, m_settings.previewWidth, m_settings.previewHeight);
         ImGui::TextDisabled("%d línea(s), fuente %.0f px%s%s", l.lines, l.fontSize, l.widened ? ", caja ensanchada" : "",
                             SubtitleText::CollapseSpaces(Project::Text(e)).empty() ? "  -  sin traducir: se muestra el inglés" : "");
     }
-    m_preview.Render(m_project.boxConfig, text, character, m_settings.previewWidth, m_settings.previewHeight,
-                     m_settings.backgroundColor, m_settings.useBackgroundImage);
-
     // Show it. 100% = one game pixel per physical screen pixel.
     if (ImGui::BeginChild("##previewimg", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar))
     {
         const ImVec2 avail = ImGui::GetContentRegionAvail();
         const float fbScale = ImGui::GetIO().DisplayFramebufferScale.x > 0 ? ImGui::GetIO().DisplayFramebufferScale.x : 1.0f;
-        const float pw = float(m_preview.Width()), ph = float(m_preview.Height());
+        const float pw = float(m_settings.previewWidth), ph = float(m_settings.previewHeight);
 
         // Part of the frame to show (game pixels): the box plus a margin in "Caja" mode,
-        // else the whole frame. Only what is shown changes, never the render itself.
+        // else the whole frame.
         ImVec2 c0(0, 0), c1(pw, ph);
         const bool boxMode = m_settings.previewScale < 0 && !text.empty();
         if (boxMode)
@@ -1289,25 +1300,39 @@ void App::DrawPreview()
             c0 = ImVec2(std::max(0.0f, layout.boxMin.x - margin), std::max(0.0f, layout.boxMin.y - margin));
             c1 = ImVec2(std::min(pw, layout.boxMax.x + margin), std::min(ph, layout.boxMax.y + margin));
         }
-        const float cw = std::max(c1.x - c0.x, 1.0f), ch = std::max(c1.y - c0.y, 1.0f);
 
-        float scale = m_settings.previewScale > 0 ? m_settings.previewScale / fbScale
-                                                  : std::min(avail.x / cw, avail.y / ch);
-        scale = std::max(scale, 0.01f);
+        // Screen pixels per game pixel. 100% is exact: the real in-game pixels. Any other
+        // zoom renders the same layout directly at the displayed size, so it stays sharp
+        // instead of resampling the 1:1 image. Fitted scales are quantized so resizing
+        // the panel does not bake a new font size every frame.
+        float raster;
+        if (m_settings.previewScale > 0)
+            raster = m_settings.previewScale;
+        else
+        {
+            const float fit = std::min(avail.x / std::max(c1.x - c0.x, 1.0f), avail.y / std::max(c1.y - c0.y, 1.0f)) * fbScale;
+            raster = std::max(0.05f, std::floor(fit * 20.0f) / 20.0f);
+        }
+        RenderPreview(raster);
+        raster = m_preview.RasterScale();  // may be clamped
+
+        // Snap the crop to whole framebuffer pixels and show it 1:1 on screen.
+        const float fw = float(m_preview.FramebufferWidth()), fh = float(m_preview.FramebufferHeight());
+        const ImVec2 f0(std::floor(c0.x * raster), std::floor(c0.y * raster));
+        const ImVec2 f1(std::min(fw, std::ceil(c1.x * raster)), std::min(fh, std::ceil(c1.y * raster)));
+        const ImVec2 size((f1.x - f0.x) / fbScale, (f1.y - f0.y) / fbScale);
+
         ImVec2 pos = ImGui::GetCursorScreenPos();
         if (boxMode)  // center the box horizontally
-            pos.x += std::max(0.0f, (avail.x - cw * scale) * 0.5f);
+            pos.x += std::max(0.0f, (avail.x - size.x) * 0.5f);
         pos = ImVec2(std::floor(pos.x * fbScale) / fbScale, std::floor(pos.y * fbScale) / fbScale);
         ImGui::SetCursorScreenPos(pos);
         ImDrawList* dl = ImGui::GetWindowDrawList();
-        const bool exact = m_settings.previewScale >= 1.0f;
-        if (exact)
-            dl->AddCallback(ImGui::GetPlatformIO().DrawCallback_SetSamplerNearest, nullptr);
+        dl->AddCallback(ImGui::GetPlatformIO().DrawCallback_SetSamplerNearest, nullptr);
         // The framebuffer texture is bottom-up: flip V.
-        ImGui::Image(ImTextureID(m_preview.Texture()), ImVec2(cw * scale, ch * scale),
-                     ImVec2(c0.x / pw, 1.0f - c0.y / ph), ImVec2(c1.x / pw, 1.0f - c1.y / ph));
-        if (exact)
-            dl->AddCallback(ImGui::GetPlatformIO().DrawCallback_SetSamplerLinear, nullptr);
+        ImGui::Image(ImTextureID(m_preview.Texture()), size,
+                     ImVec2(f0.x / fw, 1.0f - f0.y / fh), ImVec2(f1.x / fw, 1.0f - f1.y / fh));
+        dl->AddCallback(ImGui::GetPlatformIO().DrawCallback_SetSamplerLinear, nullptr);
     }
     ImGui::EndChild();
 }

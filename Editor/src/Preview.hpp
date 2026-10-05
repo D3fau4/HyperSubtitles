@@ -34,11 +34,17 @@ public:
     void ClearBackgroundImage();
     bool HasBackgroundImage() const { return m_bgTexture != 0; }
 
+    // width x height = game resolution. rasterScale = screen pixels per game pixel:
+    // 1 renders exactly the in-game pixels; other values render the same layout
+    // sharp at the size it is displayed.
     void Render(const DialogueBoxCore::Config& cfg, const std::string& text, int character,
-                int width, int height, const float bgColor[3], bool useBgImage);
+                int width, int height, const float bgColor[3], bool useBgImage, float rasterScale = 1.0f);
     gl::GLuint Texture() const { return m_fboTexture; }
-    int Width() const { return m_width; }
-    int Height() const { return m_height; }
+    int Width() const { return m_gameWidth; }       // game resolution of the last render
+    int Height() const { return m_gameHeight; }
+    int FramebufferWidth() const { return m_width; }
+    int FramebufferHeight() const { return m_height; }
+    float RasterScale() const { return m_rasterScale; }
 
     // Whether the dialogue font can draw this codepoint (true when the game font is missing).
     bool FontCovers(unsigned int codepoint);
@@ -46,6 +52,7 @@ public:
     // Layout with the same font the preview uses.
     DialogueBoxCore::Layout Measure(const DialogueBoxCore::Config& cfg, const std::string& text, int width, int height);
 
+    // Saves the last render (call Render with rasterScale 1 first for the exact game pixels).
     bool SavePng(const std::string& path, std::string& error);
 
 private:
@@ -62,8 +69,11 @@ private:
 
     gl::GLuint m_fbo = 0;
     gl::GLuint m_fboTexture = 0;
-    int        m_width = 0;
+    int        m_width = 0;        // framebuffer size
     int        m_height = 0;
+    int        m_gameWidth = 0;
+    int        m_gameHeight = 0;
+    float      m_rasterScale = 1.0f;
 
     gl::GLuint m_bgTexture = 0;
     std::map<int, gl::GLuint> m_portraitFiles;   // file id -> texture
