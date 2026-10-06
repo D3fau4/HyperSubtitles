@@ -19,6 +19,9 @@
     <Filter Include="faces">
       <UniqueIdentifier>{55a702e0-08cb-4a4b-8453-e80db0f46763}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shared">
+      <UniqueIdentifier>{b3f1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\minhook\include\MinHook.h">
@@ -45,8 +48,14 @@
     <ClInclude Include="..\imgui\backends\imgui_impl_win32.h">
       <Filter>ImGUI</Filter>
     </ClInclude>
-    <ClInclude Include="json.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\shared\json.hpp">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\DialogueBoxCore.hpp">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SubtitleText.hpp">
+      <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
@@ -92,6 +101,9 @@
     <ClCompile Include="DialogueBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\DialogueBoxCore.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="winmm.def">
@@ -108,13 +120,109 @@
     <Image Include="faces\001.png">
       <Filter>faces</Filter>
     </Image>
-    <Image Include="faces\005.png">
+    <Image Include="faces\002.png">
       <Filter>faces</Filter>
     </Image>
     <Image Include="faces\003.png">
       <Filter>faces</Filter>
     </Image>
     <Image Include="faces\004.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\005.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\006.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\007.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\008.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\009.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\010.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\011.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\013.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\014.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\015.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\016.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\017.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\018.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\019.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\020.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\021.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\022.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\102.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\107.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\120.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\121.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\122.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\127.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\128.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\129.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1002.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1006.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1007.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1008.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1009.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1010.png">
+      <Filter>faces</Filter>
+    </Image>
+    <Image Include="faces\1022.png">
       <Filter>faces</Filter>
     </Image>
   </ItemGroup>

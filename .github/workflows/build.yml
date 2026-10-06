@@ -29,3 +29,90 @@ jobs:
           path: |
             **/Release/winmm.dll
           if-no-files-found: error
+
+  editor:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl-dev libegl-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev \
+            libxi-dev libxss-dev libxfixes-dev libxtst-dev libxkbcommon-dev libwayland-dev \
+            libasound2-dev libpulse-dev
+
+      - name: Configure
+        run: cmake -S Editor -B Editor/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build Editor/build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir Editor/build -C Release --output-on-failure
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypersubtitles-editor-windows
+          path: Editor/build/Release/HyperSubtitlesEditor.exe
+          if-no-files-found: error
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypersubtitles-editor-linux
+          path: Editor/build/HyperSubtitlesEditor
+          if-no-files-found: error
+
+  package:
+    needs: [build, editor]
+    strategy:
+      matrix:
+        include:
+          - platform: windows
+            editor: HyperSubtitlesEditor.exe
+          - platform: linux
+            editor: HyperSubtitlesEditor
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download winmm.dll
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersubtitles-winmm
+          path: artifacts/winmm
+
+      - name: Download editor
+        uses: actions/download-artifact@v4
+        with:
+          name: hypersubtitles-editor-${{ matrix.platform }}
+          path: artifacts/editor
+
+      - name: Build release package
+        run: >-
+          python3 tools/package/package.py --platform ${{ matrix.platform }}
+          --dll "$(find artifacts/winmm -name winmm.dll | head -n 1)"
+          --editor artifacts/editor/${{ matrix.editor }}
+          --out dist --version "${GITHUB_SHA::7}"
+
+      # The zip itself (not the folder): artifacts lose Unix permissions, and the
+      # Linux editor must stay executable.
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: HyperSubtitles-${{ matrix.platform }}
+          path: dist/HyperSubtitles-*-${{ matrix.platform }}.zip
+          if-no-files-found: error

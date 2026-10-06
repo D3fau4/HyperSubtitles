@@ -1,0 +1,7 @@
+.venv/
+.python311/
+wav_out/
+transcripts/
+__pycache__/
+*.pyc
+python-*.exe

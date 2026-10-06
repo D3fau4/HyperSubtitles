@@ -1,0 +1,38 @@
+{
+  "x": 600.0,
+  "y": 1000.0,
+  "width": 1200.0,
+  "portraitHeight": 75.0,
+  "portraitAspect": 2.0,
+  "fontSize": 30.0,
+  "minFontScale": 0.75,
+  "paddingLeft": 0.0,
+  "paddingRight": 0.0,
+  "paddingTop": 0.0,
+  "paddingBottom": 0.0,
+  "paddingInner": 10.0,
+  "textYOffset": 0.0,
+  "textXOffset": -20.5,
+  "opacity": 1.0,
+  "rounding": 10.0,
+  "borderThickness": 4.5,
+  "maxLines": 2,
+  "bgColor": [
+    28.0,
+    20.0,
+    60.0,
+    220.0
+  ],
+  "borderColor": [
+    222.0,
+    151.0,
+    241.0,
+    255.0
+  ],
+  "textColor": [
+    255.0,
+    255.0,
+    255.0,
+    255.0
+  ]
+}

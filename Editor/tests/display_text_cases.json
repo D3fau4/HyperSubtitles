@@ -1,0 +1,12 @@
+[
+  {"translation": "", "english": "There!", "expected": "There!"},
+  {"translation": "", "english": "Hello,\nworld  of\tgames", "expected": "Hello, world of games"},
+  {"translation": "   \n  ", "english": "Fallback", "expected": "Fallback"},
+  {"translation": "¡Ahí!", "english": "There!", "expected": "¡Ahí!"},
+  {"translation": "  Hola   mundo  ", "english": "x", "expected": "Hola mundo"},
+  {"translation": "Primera línea\nSegunda línea", "english": "x", "expected": "Primera línea\nSegunda línea"},
+  {"translation": "Uno \n\n  dos\r\n tres ", "english": "x", "expected": "Uno\ndos\ntres"},
+  {"translation": "Espacio duro y　ideográfico", "english": "x", "expected": "Espacio duro y ideográfico"},
+  {"translation": "Tab\tsep línea", "english": "x", "expected": "Tab sep línea"},
+  {"translation": "", "english": "", "expected": ""}
+]

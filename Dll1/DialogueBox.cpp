@@ -12,14 +12,54 @@
 #include "../imgui/imgui.h"
 #include <imgui_internal.h>
 
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
+#ifndef GL_GENERATE_MIPMAP
+#define GL_GENERATE_MIPMAP 0x8191
+#endif
+
 #pragma comment(lib, "windowscodecs.lib")
 #pragma comment(lib, "shlwapi.lib")
 
 static constexpr struct { int character; int resourceId; } k_portraits[] = {
-    { 1, IDB_PNG1 },
-    { 3, IDB_PNG2 },
-    { 4, IDB_PNG3 },
-    { 5, IDB_PNG4 },
+    { 1, IDB_FACE_001 },
+    { 2, IDB_FACE_002 },
+    { 3, IDB_FACE_003 },
+    { 4, IDB_FACE_004 },
+    { 5, IDB_FACE_005 },
+    { 6, IDB_FACE_006 },
+    { 7, IDB_FACE_007 },
+    { 8, IDB_FACE_008 },
+    { 9, IDB_FACE_009 },
+    { 10, IDB_FACE_010 },
+    { 11, IDB_FACE_011 },
+    { 12, IDB_FACE_011 },
+    { 13, IDB_FACE_013 },
+    { 14, IDB_FACE_014 },
+    { 15, IDB_FACE_015 },
+    { 16, IDB_FACE_016 },
+    { 17, IDB_FACE_017 },
+    { 18, IDB_FACE_018 },
+    { 19, IDB_FACE_019 },
+    { 20, IDB_FACE_020 },
+    { 21, IDB_FACE_021 },
+    { 22, IDB_FACE_022 },
+    { 102, IDB_FACE_102 },
+    { 107, IDB_FACE_107 },
+    { 120, IDB_FACE_120 },
+    { 121, IDB_FACE_121 },
+    { 122, IDB_FACE_122 },
+    { 127, IDB_FACE_127 },
+    { 128, IDB_FACE_128 },
+    { 129, IDB_FACE_129 },
+    { 1002, IDB_FACE_1002 },
+    { 1006, IDB_FACE_1006 },
+    { 1007, IDB_FACE_1007 },
+    { 1008, IDB_FACE_1008 },
+    { 1009, IDB_FACE_1009 },
+    { 1010, IDB_FACE_1010 },
+    { 1022, IDB_FACE_1022 },
 };
 
 static DialogueBox::Config          s_cfg;
@@ -87,10 +127,11 @@ static GLuint LoadGLTextureFromResource(HMODULE hMod, int resourceId)
     GLuint tex = 0;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, static_cast<GLsizei>(w), static_cast<GLsizei>(h),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -100,9 +141,7 @@ static GLuint LoadGLTextureFromResource(HMODULE hMod, int resourceId)
 
 void DialogueBox::OnImGuiInit()
 {
-    // 0x0020-0x00FF = Basic Latin + Latin-1 Supplement (covers á é í ó ú ñ ü and all Spanish chars)
-    static const ImWchar k_latinRanges[] = { 0x0020, 0x00FF, 0 };
-    s_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("FOT-NewRodinPro-EB.otf", 36.0f, nullptr, k_latinRanges);
+    s_font = DialogueBoxCore::AddDialogueFont(ImGui::GetIO().Fonts, DialogueBoxCore::kFontFile);
     if (!s_font)
         Logger::log("DialogueBox: font not found, using default");
 
@@ -155,63 +194,10 @@ void DialogueBox::Render()
     if (!s_text || ImGui::GetTime() >= s_endTime)
         return;
 
-    ImDrawList* dl   = ImGui::GetForegroundDrawList();
-    ImVec2      disp = ImGui::GetIO().DisplaySize;
-
-    const float PAD_L  = s_cfg.paddingLeft;
-    const float PAD_R  = s_cfg.paddingRight;
-    const float PAD_T  = s_cfg.paddingTop;
-    const float PAD_B  = s_cfg.paddingBottom;
-    const float PAD_IN = s_cfg.paddingInner;
-    const float PORT_H = s_cfg.portraitHeight;
-    const float PORT_W = PORT_H * s_cfg.portraitAspect;
-    ImFont*     font   = s_font ? s_font : ImGui::GetDefaultFont();
-    const float fontSize = s_cfg.fontSize;
-    const float alpha  = s_cfg.opacity;
-
-    auto applyAlpha = [&](const float col[4]) -> ImU32 {
-        return IM_COL32(
-            static_cast<int>(col[0] * 255),
-            static_cast<int>(col[1] * 255),
-            static_cast<int>(col[2] * 255),
-            static_cast<int>(col[3] * 255 * alpha));
-    };
-
-    // Measure text with a generous max wrap width so the box shrinks to fit the content
-    const float maxTextW = (s_cfg.width >= 0.0f)
-        ? (s_cfg.width - PAD_L - PORT_W - PAD_IN - PAD_R)
-        : (disp.x * 0.88f - PAD_L - PORT_W - PAD_IN - PAD_R);
-    ImVec2 textSize = font->CalcTextSizeA(fontSize, FLT_MAX, maxTextW, s_text);
-
-    // Box sized to content
-    const float BOX_W  = PAD_L + PORT_W + PAD_IN + textSize.x + PAD_R;
-    const float BOX_H  = ImMax(PORT_H, textSize.y) + PAD_T + PAD_B;
-    const float BOX_X  = (s_cfg.x >= 0.0f) ? s_cfg.x : (disp.x - BOX_W) * 0.5f;
-    const float BOX_Y  = (s_cfg.y >= 0.0f) ? s_cfg.y : disp.y * 0.79f;
-
-    const ImVec2 p0(BOX_X, BOX_Y);
-    const ImVec2 p1(BOX_X + BOX_W, BOX_Y + BOX_H);
-
-    dl->AddRectFilled(p0, p1, applyAlpha(s_cfg.bgColor), s_cfg.rounding);
-    dl->AddRect(p0, p1, applyAlpha(s_cfg.borderColor), s_cfg.rounding, 0, s_cfg.borderThickness);
-
-    auto it = s_textures.find(s_character);
-    if (it != s_textures.end())
-    {
-        const ImVec2 imgP0(BOX_X + PAD_L, BOX_Y + (BOX_H - PORT_H) * 0.5f);
-        const ImVec2 imgP1(imgP0.x + PORT_W, imgP0.y + PORT_H);
-        dl->AddImage(static_cast<ImTextureID>(it->second), imgP0, imgP1,
-                     ImVec2(0, 0), ImVec2(1, 1),
-                     IM_COL32(255, 255, 255, static_cast<int>(255 * alpha)));
-    }
-
-    const float textAreaX = BOX_X + PAD_L + PORT_W + PAD_IN;
-    const float textAreaW = textSize.x;
-    const float textX = textAreaX + s_cfg.textXOffset;
-    const float textY = BOX_Y + (BOX_H - textSize.y) * 0.5f + s_cfg.textYOffset;
-
-    dl->AddText(font, fontSize, ImVec2(textX, textY),
-                applyAlpha(s_cfg.textColor), s_text, nullptr, textAreaW);
+    ImFont* font = s_font ? s_font : ImGui::GetDefaultFont();
+    auto    it   = s_textures.find(s_character);
+    DialogueBoxCore::Draw(ImGui::GetForegroundDrawList(), s_cfg, font, ImGui::GetIO().DisplaySize, s_text,
+                          it != s_textures.end() ? static_cast<ImTextureID>(it->second) : ImTextureID_Invalid);
 }
 
 static int  s_previewCharacter = 1;
@@ -255,6 +241,8 @@ void DialogueBox::DrawDebugWindow()
 
     ImGui::SeparatorText("Text");
     ImGui::DragFloat("Font Size",    &s_cfg.fontSize,    0.5f,  8.0f,  96.0f);
+    ImGui::SliderInt("Max Lines",    &s_cfg.maxLines,    1, 6);
+    ImGui::SliderFloat("Min Font Scale", &s_cfg.minFontScale, 0.5f, 1.0f);
     ImGui::DragFloat("X Offset",     &s_cfg.textXOffset, 0.5f, -128.0f, 128.0f);
     ImGui::DragFloat("Y Offset",     &s_cfg.textYOffset, 0.5f, -128.0f, 128.0f);
 
@@ -279,6 +267,9 @@ void DialogueBox::DrawDebugWindow()
         Show(nullptr, 0.0f, 0);
 
     ImGui::Separator();
+    if (ImGui::Button("Save dialoguebox.json"))
+        Logger::log(DialogueBoxCore::SaveConfigFile("./dialoguebox.json", s_cfg)
+            ? "DialogueBox: saved dialoguebox.json" : "DialogueBox: failed to save dialoguebox.json");
     ImGui::Text("Box @ (%.0f, %.0f)",
         s_cfg.x >= 0 ? s_cfg.x : (disp.x * 0.5f),
         s_cfg.y >= 0 ? s_cfg.y : disp.y * 0.79f);
