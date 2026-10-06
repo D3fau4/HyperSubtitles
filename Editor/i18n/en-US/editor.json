@@ -32,6 +32,7 @@
     "autosaved": "Autosaved.",
     "autosave_failed": "Autosave failed: {}",
     "translation_applied": "Translation applied to {} lines (Ctrl+Z to undo).",
+    "text_copied": "Text copied to the clipboard.",
     "box_saved": "dialoguebox.json saved."
   },
   "no_project": {
@@ -86,6 +87,7 @@
     "translation": "Translation",
     "translation_help": "Enter inserts a line break, which the game keeps.\nCtrl+Enter marks the line as translated and jumps to the next pending one.\nIf left empty, the game shows the English text.",
     "copy_english": "Copy English",
+    "copy": "Copy",
     "character": "Character",
     "search": "Search",
     "no_portrait": "no portrait: the game shows only the text",

@@ -969,6 +969,12 @@ void App::DrawDetail()
         }
         if (!text.empty())
         {
+            ImGui::SameLine();
+            if (ImGui::SmallButton("editor/detail/copy"_i18n.c_str()))
+            {
+                ImGui::SetClipboardText(text.c_str());
+                SetStatusMessage("editor/msg/text_copied"_i18n);
+            }
             const auto src = e[lang.key].value("source", std::string());
             if (!src.empty())
             {
@@ -996,6 +1002,12 @@ void App::DrawDetail()
         ImGui::ClearActiveID();
         m_project.SetText(idx, SubtitleText::CollapseSpaces(Project::SourceText(e, "en")));
         m_focusText = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("editor/detail/copy"_i18n.c_str()))
+    {
+        ImGui::SetClipboardText(Project::Text(e).c_str());
+        SetStatusMessage("editor/msg/text_copied"_i18n);
     }
     m_textBuffer = Project::Text(e);
     if (m_focusText)

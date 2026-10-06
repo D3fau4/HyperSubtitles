@@ -32,6 +32,7 @@
     "autosaved": "Autoguardado.",
     "autosave_failed": "Error en el autoguardado: {}",
     "translation_applied": "Traducción aplicada a {} líneas (Ctrl+Z para deshacer).",
+    "text_copied": "Texto copiado al portapapeles.",
     "box_saved": "dialoguebox.json guardado."
   },
   "no_project": {
@@ -86,6 +87,7 @@
     "translation": "Traducción",
     "translation_help": "Enter inserta un salto de línea, que se respeta en el juego.\nCtrl+Enter marca la línea como traducida y salta a la siguiente pendiente.\nSi se deja vacía, el juego muestra el texto en inglés.",
     "copy_english": "Copiar inglés",
+    "copy": "Copiar",
     "character": "Personaje",
     "search": "Buscar",
     "no_portrait": "sin retrato: el juego solo muestra el texto",
